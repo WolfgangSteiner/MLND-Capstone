@@ -1,9 +1,10 @@
 #! /usr/bin/python2
 
 from __future__ import print_function
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform
 import random
 import glob, os, os.path
+import numpy as np
 
 font_blacklist = ("FiraMono", "Corben", "D050000L","jsMath", "Redacted",
   "RedactedScript", "AdobeBlank", "EncodeSans", "cwTeX", "Droid", "Yinmar",
@@ -41,6 +42,9 @@ def add_outline(draw, x, y, font, digit, text_color):
     draw.text((x-1,y+1), str(digit), font=font, fill=outline_color)
     draw.text((x+1,y+1), str(digit), font=font, fill=outline_color)
 
+def displacement():
+    return np.array([random.random(), random.random()]) * digit_size / 4
+
 def create_digit(font_tuple, digit):
     font = font_tuple[1]
     font_name = font_tuple[0]
@@ -65,9 +69,16 @@ def create_digit(font_tuple, digit):
         add_outline(draw, x, y, font, digit, text_color)
 
     draw.text((x,y), str(digit), font=font, fill=text_color)
+
+    bounding_box = np.array([0,0,0,1,1,1,1,0]) * digit_size * 2 + (2 * np.random.rand(8) - 1) * digit_size / 4
+    transformation = ImageTransform.QuadTransform(bounding_box)
+    digit_image = digit_image.transform((digit_size * 2, digit_size * 2), transformation, resample=Image.BICUBIC)
+
     angle = random.randrange(-15,15)
     digit_image = digit_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+
     digit_image = digit_image.crop((digit_size/2, digit_size/2, digit_size * 3 / 2, digit_size * 3 / 2))
+
     digit_image = digit_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
 
     if debug:
@@ -88,4 +99,5 @@ for i in range(0,num_digit_columns):
             print("%02d/%02d: %s" % (i,j, font_tuple[0]))
             overview_draw.text((i * digit_size, j * digit_size + 22), "%02d/%02d" % (i,j))
 
-overview_image.show()
+overview_image.save("overview.png")
+##os.system("eog overview.png")
