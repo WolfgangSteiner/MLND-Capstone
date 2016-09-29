@@ -127,21 +127,24 @@ def create_digit(font_tuple, digit):
 
     return digit_image
 
+def create_random_digit():
+    font_tuple = random.choice(font_array)
+    return create_digit(font_tuple, random.randint(0,9))
+
 default_font = ImageFont.load_default()
 
 for i in range(0,num_digit_columns):
     for j in range(0,num_digit_rows):
         if debug:
           font_tuple = font_array[current_font]
+          digit_image = create_digit(font_tuple, random.randint(0,9))
           current_font = current_font + 1
           if current_font >= num_fonts:
               overview_image.show()
               sys.exit()
 
         else:
-            font_tuple = random.choice(font_array)
-
-        digit_image = create_digit(font_tuple, random.randint(0,9))
+            digit_image = create_random_digit()
         overview_image.paste(digit_image, (digit_size*i, digit_size*j))
 
         if debug:
