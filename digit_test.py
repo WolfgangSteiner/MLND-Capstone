@@ -93,8 +93,10 @@ def create_digit(font_tuple, digit):
             if abs(text_color - background_color) > 16:
                 break
 
-    digit_image = Image.new("L", (2 * digit_size, 2 * digit_size), background_color)
+    noise = (np.random.rand(2 * digit_size, 2 * digit_size) - 0.5) * random.randint(0,32) + background_color
+    digit_image = Image.fromarray(noise).convert("L")
     draw = ImageDraw.Draw(digit_image)
+
     try:
         (w,h) = font.getsize(str(digit))
     except IOError:
