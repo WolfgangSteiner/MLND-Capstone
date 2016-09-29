@@ -53,7 +53,7 @@ def find_fonts():
 
 font_array = find_fonts()
 
-digit_size = 32
+digit_size = 24
 num_digit_columns = 32
 num_digit_rows = 32
 debug = False
