@@ -90,7 +90,7 @@ def create_digit(font_tuple, digit):
         while True:
             text_color = random.randint(0,255)
             # find a text color that has a minimum amount of contrast against background_color:
-            if abs(text_color - background_color) > 16:
+            if abs(text_color - background_color) > 32:
                 break
 
     noise = (np.random.rand(2 * digit_size, 2 * digit_size) - 0.5) * random.randint(0,32) + background_color
