@@ -28,7 +28,7 @@ model.add(inception(64, (12,6,4*32)))
 model.add(Dropout(0.5))
 
 model.add(Flatten())
-model.add(Dense(256))
+model.add(Dense(512))
 model.add(Activation("relu"))
 model.add(Dropout(0.5))
 model.add(Dense(num_classes, init='uniform'))
