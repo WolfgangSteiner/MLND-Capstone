@@ -95,56 +95,65 @@ def random_colors():
         # find a text color that has a minimum amount of contrast against background_color:
         if abs(text_color - background_color) > 32:
             return background_color, text_color
-    
-def create_digit_background(background_color):
-    noise = (np.random.rand(2 * digit_size, 2 * digit_size) - 0.5) * random.randint(0,32) + background_color
+
+def create_char_background(background_color):
+    noise = (np.random.rand(canvas_height, canvas_width) - 0.5) * random.randint(0,32) + background_color
     return Image.fromarray(noise).convert("L")
 
-        
-def create_digit(font_tuple, digit):
-    font = font_tuple[1]
-    font_name = font_tuple[0]
+def random_char():
+    return random.choice(random_char.char_array)
 
-    background_color, text_color = random_colors()
-    digit_image = create_digit_background(background_color)
-    draw = ImageDraw.Draw(digit_image)
+random_char.char_array = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+def calc_text_size(text, font_tuple):
+    font_name, font = font_tuple
     try:
-        (w,h) = font.getsize(str(digit))
+        return font.getsize(text)
     except IOError:
         print("font.getsize failed for font:%s" % font_name)
         raise IOError
 
-    x = 0.5 * (2 * digit_size - w)
-    y = 0.5 * (2 * digit_size - h)
 
-    if random.random() > 1.0:
-        add_outline(draw, x, y, font, digit, text_color)
+def create_char(font_tuple, char):
+    font = font_tuple[1]
+    font_name = font_tuple[0]
 
-    draw.text((x,y), str(digit), font=font, fill=text_color)
+    background_color, text_color = random_colors()
+    char_image = create_char_background(background_color)
+    draw = ImageDraw.Draw(char_image)
 
-    bounding_box = np.array([0,0,0,1,1,1,1,0]) * digit_size * 2 + (2 * np.random.rand(8) - 1) * digit_size / 4
+    text = char
+
+    (w,h) = calc_text_size(text, font_tuple)
+    x = 0.5 * (canvas_width - w)
+    y = 0.5 * (canvas_height - h)
+
+    if random.random() > 0.25:
+        text = random_char() + text
+        (w2,h2) = calc_text_size(text, font_tuple)
+        x -= (w2 - w)
+
+    if random.random() > 0.25:
+        text = text + random_char()
+
+    if random.random() > 0.5:
+        add_outline(draw, x, y, font, text, text_color)
+
+    draw.text((x,y), text, font=font, fill=text_color)
+
+    bounding_box = np.array([0,0,0,char_height,char_width,char_height,char_width,0]) * 2 + (2 * np.random.rand(8) - 1) * char_width / 4
     transformation = ImageTransform.QuadTransform(bounding_box)
-    digit_image = digit_image.transform((digit_size * 2, digit_size * 2), transformation, resample=Image.BICUBIC)
+    char_image = char_image.transform((char_width * 2, char_height * 2), transformation, resample=Image.BICUBIC)
 
     angle = random.randrange(-15,15)
-    digit_image = digit_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+    char_image = char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+    char_image = char_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
+    char_image = char_image.crop((char_width/2, char_height/2, char_width * 3 / 2, char_height * 3 / 2))
+    return char_image
 
-    digit_image = digit_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
-
-    digit_image = digit_image.crop((digit_size/2, digit_size/2, digit_size * 3 / 2, digit_size * 3 / 2))
-
-    if False:
-        draw = ImageDraw.Draw(digit_image)
-        draw.text((0,0), str(digit), font=ImageFont.load_default(), fill=text_color)
-
-    return digit_image
-
-
-def create_random_digit():
+def create_random_char():
     font_tuple = random.choice(font_array)
-    return create_digit(font_tuple, random.randint(0,9))
-
+    return create_char(font_tuple, random_char())
 
 def CharacterGenerator(batchsize):
     while True:
@@ -152,28 +161,31 @@ def CharacterGenerator(batchsize):
         y = []
         for i in range(0,batchsize):
             font_tuple = random.choice(font_array)
-            digit = random.randint(0,9)
-            digit_image = create_digit(font_tuple, digit)
-            x.append(np.array(digit_image).reshape(24,24,1).astype('float32') / 255.0)
-            y.append(digit)
+            char = random_char()
+            char_image = create_char(font_tuple, char)
+            x.append(np.array(char_image).reshape(char_height,char_width,1).astype('float32') / 255.0)
+            y.append(random_char.char_array.index(char))
 
-        yield np.array(x),np_utils.to_categorical(y,nb_classes=10)
+        yield np.array(x),np_utils.to_categorical(y,nb_classes=len(random_char.char_array))
 
 
 if __name__ == "__main__":
-    overview_image = Image.new("L", (digit_size * num_digit_columns, digit_size * num_digit_rows), 255)
+    overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
+    generator = CharacterGenerator(num_char_columns)
 
-    generator = CharacterGenerator(32)
-    for i in range(0,num_digit_columns):
-        j = 0
+    for j in range(0,num_char_rows):
         batch = generator.next()
-        for j in range(0,32):
-            overview_image.paste(Image.fromarray((batch[0][j].reshape(24,24) * 255).astype('uint8'),mode="L"), (digit_size*i, digit_size*j))
-#
-            if debug:
-                print("%02d/%02d: %s" % (i,j, font_tuple[0]))
-                overview_draw.text((i * digit_size, j * digit_size + 22), "%02d/%02d" % (i,j))
+        for i in range(0,num_char_columns):
+            font_tuple = random.choice(font_array)
+            char = random_char()
+            overview_image.paste(create_char(font_tuple, char), (char_width*i, char_height*j))
 
-            
+            #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
+
+            if debug:
+                print("%02d/%02d: %s" % (j,i, font_tuple[0]))
+                overview_draw.text((i * char_width, j * char_height + 10), char)
+                overview_draw.text((i * char_width, j * char_height + 38), "%02d/%02d" % (j,i))
+
     overview_image.save("overview.png")
