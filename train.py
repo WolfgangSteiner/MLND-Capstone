@@ -6,6 +6,8 @@ from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
 
+num_classes = 26*2 + 10
+
 def inception(depth, input_shape):
     input = Input(shape=input_shape)
     tower1 = Convolution2D(depth, 1, 1, border_mode='same', activation='relu')(input)
@@ -19,17 +21,17 @@ def inception(depth, input_shape):
     return Model(input, output)
 
 model = Sequential()
-model.add(inception(32, (24,24,1)))
+model.add(inception(32, (24,12,1)))
 model.add(Dropout(0.5))
 model.add(MaxPooling2D((3, 3), strides=(2,2), border_mode='same'))
-model.add(inception(64, (12,12,4*32)))
+model.add(inception(64, (12,6,4*32)))
 model.add(Dropout(0.5))
 
 model.add(Flatten())
 model.add(Dense(256))
 model.add(Activation("relu"))
 model.add(Dropout(0.5))
-model.add(Dense(10, init='uniform'))
+model.add(Dense(num_classes, init='uniform'))
 model.add(Activation('softmax'))
 
 model.compile(
@@ -50,6 +52,3 @@ model.fit_generator(
     nb_val_samples = batch_size * 32,
     callbacks = [model_checkpoint, reduce_learning_rate],
     max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
-
-
-
