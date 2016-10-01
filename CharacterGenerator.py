@@ -4,35 +4,35 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform
 import random
 import glob, os, os.path
 import numpy as np
-from sys import platform
 from keras.utils import np_utils
+import re
 
-# Get list of font locations. Additional fonts can be added to "fonts" in the
-# working directory.
-def font_dirs():
-    if platform == "linux2":
-        return ("/usr/share/fonts/*", "./fonts")
-    elif platform == "darwin":
-        return ("/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts"), "./fonts")
-    else:
-        raise RuntimeError('unsupported OS')
+
+font_blacklist = (
+    # Linux fonts
+    "FiraMono", "Corben", "D050000L","jsMath", "Redacted",
+    "RedactedScript", "AdobeBlank", "EncodeSans", "cwTeX", "Droid", "Yinmar", "Lao",
+        # Apple fonts
+    "Apple Braille", "NISC18030", "Wingdings", "Webdings", "LastResort",
+    "Bodoni Ornaments", "Hoefler Text Ornaments", "ZapfDingbats", "Kokonor",
+    "Farisi", "Symbol", "Diwan Thuluth", "Diwan")
+
 
 # Blacklist symbol fonts and fonts not working with PIL
 def is_font_blacklisted(font_file):
-    font_blacklist = (
-        # Linux fonts
-        "FiraMono", "Corben", "D050000L","jsMath", "Redacted",
-        "RedactedScript", "AdobeBlank", "EncodeSans", "cwTeX", "Droid", "Yinmar", "Lao",
-        # Apple fonts
-        "Apple Braille", "NISC18030", "Wingdings", "Webdings", "LastResort",
-        "Bodoni Ornaments", "Hoefler Text Ornaments", "ZapfDingbats", "Kokonor")
-
+    pattern = re.compile("^[A-Z]")
     font_family = os.path.basename(font_file).split(".")[0].split("-")[0]
-    return font_family.startswith(font_blacklist)
+    return font_family.startswith(font_blacklist) or not pattern.match(font_family)
 
-# Collect all ttf fonts in one font location, except those blacklisted.
-def find_fonts_in_directory(directory_path):
-    font_array = []
+
+def is_latin_font(font_subdir):
+    try:
+        fo = open(font_subdir + "/METADATA.pb", "r")
+        return 'subsets: "latin"\n' in fo.readlines()
+    except:
+        return False
+
+def load_fonts_in_subdir(directory_path, font_array):
     for font_file in glob.iglob(directory_path + "/*.ttf"):
         if not is_font_blacklisted(font_file):
             try:
@@ -40,42 +40,53 @@ def find_fonts_in_directory(directory_path):
                 print("adding font: %s" % font_file)
             except IOError:
                 print("Error loading font: %s" % font_file)
+
+
+# Collect all ttf fonts in one font location, except those blacklisted.
+def find_fonts_in_directory(directory_path):
+    font_array = []
+    for font_subdir in glob.iglob(directory_path + "/*"):
+        if is_latin_font(font_subdir):
+            load_fonts_in_subdir(font_subdir, font_array)
         else:
-            print("Skipping blacklisted font: %s" % font_file)
+            print("Skipping non-latin fonts in : %s" % font_subdir)
 
     return font_array
 
+
 def find_fonts():
     font_array = []
-    for font_dir in font_dirs():
+    for font_dir in ("fonts-master/ofl",):
         font_array += find_fonts_in_directory(font_dir)
 
     return font_array
 
 font_array = find_fonts()
 
-digit_size = 24
-num_digit_columns = 32
-num_digit_rows = 32
+char_height = 24
+char_width = 12
+canvas_width = 2 * char_width
+canvas_height = 2 * char_height
+num_char_columns = 64
+num_char_rows = 32
 debug = False
 num_fonts = len(font_array)
 current_font = 0
 
-def add_outline(draw, x, y, font, digit, text_color):
+def add_outline(draw, x, y, font, char, text_color):
     while True:
         outline_color = random.randint(0,255)
         # find an outline color that has a minimum amount of contrast against text_color:
         if abs(text_color - outline_color) > 32:
             break
 
-    draw.text((x-1,y-1), str(digit), font=font, fill=outline_color)
-    draw.text((x+1,y-1), str(digit), font=font, fill=outline_color)
-    draw.text((x-1,y+1), str(digit), font=font, fill=outline_color)
-    draw.text((x+1,y+1), str(digit), font=font, fill=outline_color)
+    draw.text((x-1,y-1), char, font=font, fill=outline_color)
+    draw.text((x+1,y-1), char, font=font, fill=outline_color)
+    draw.text((x-1,y+1), char, font=font, fill=outline_color)
+    draw.text((x+1,y+1), char, font=font, fill=outline_color)
 
 def displacement():
-    return np.array([random.random(), random.random()]) * digit_size / 4
-
+    return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
 
 def random_colors():
     background_color = random.randint(0,255)
