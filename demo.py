@@ -46,7 +46,7 @@ def draw_probability(cv_img, p):
 
 model=load_model('inception01.hdf')
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while(True):
     # Capture frame-by-frame
@@ -78,3 +78,4 @@ while(True):
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
+1  2  354567888976543432
