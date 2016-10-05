@@ -5,6 +5,8 @@ import random
 import glob, os, os.path
 import numpy as np
 import re
+from Common import to_categorical
+import keras.utils.np_utils to_categorical
 
 
 font_blacklist = (
@@ -175,11 +177,6 @@ def create_char(font_tuple, char):
 def create_random_char():
     font_tuple = random.choice(font_array)
     return create_char(font_tuple, random_char())
-
-def to_categorical(labels, num_classes):
-    result = np.zeros(shape=(len(labels), num_classes))
-    result[np.arange(len(labels)), labels] = 1
-    return result.astype('float32')
 
 def CharacterGenerator(batchsize):
     while True:
