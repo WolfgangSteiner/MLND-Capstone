@@ -111,17 +111,35 @@ def calc_text_size(text, font_tuple):
     except IOError:
         print("font.getsize failed for font:%s" % font_name)
         raise IOError
+def perspective_transform(char_image):
+    (w,h) = char_image.size
+    bounding_box = np.array([0,0,0,h,w,h,w,0]) * 2 + (2 * np.random.rand(8) - 1) * w / 4
+    transformation = ImageTransform.QuadTransform(bounding_box)
+    return char_image.transform((w * 2, h * 2), transformation, resample=Image.BICUBIC)
+
+
+def rotate(char_image):
+    angle = random.randrange(-10,10)
+    return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+
+
+def blur(char_image):
+    return char_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
+
+
+def crop(char_image):
+    (w,h) = char_image.size
+    return char_image.crop((w/4, h/4, w * 3 / 4, h * 3 / 4))
 
 
 def create_char(font_tuple, char):
     font = font_tuple[1]
     font_name = font_tuple[0]
-
     background_color, text_color = random_colors()
+    text = char
+
     char_image = create_char_background(background_color)
     draw = ImageDraw.Draw(char_image)
-
-    text = char
 
     (w,h) = calc_text_size(text, font_tuple)
     x = 0.5 * (canvas_width - w)
@@ -140,15 +158,11 @@ def create_char(font_tuple, char):
 
     draw.text((x,y), text, font=font, fill=text_color)
 
-    bounding_box = np.array([0,0,0,char_height,char_width,char_height,char_width,0]) * 2 + (2 * np.random.rand(8) - 1) * char_width / 4
-    transformation = ImageTransform.QuadTransform(bounding_box)
-    char_image = char_image.transform((char_width * 2, char_height * 2), transformation, resample=Image.BICUBIC)
+    #char_image = perspective_transform(char_image)
+    char_image = rotate(char_image)
+    char_image = blur(char_image)
+    return crop(char_image)
 
-    angle = random.randrange(-15,15)
-    char_image = char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
-    char_image = char_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
-    char_image = char_image.crop((char_width/2, char_height/2, char_width * 3 / 2, char_height * 3 / 2))
-    return char_image
 
 def create_random_char():
     font_tuple = random.choice(font_array)
