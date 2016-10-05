@@ -4,7 +4,6 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform
 import random
 import glob, os, os.path
 import numpy as np
-from keras.utils import np_utils
 import re
 
 
@@ -155,6 +154,11 @@ def create_random_char():
     font_tuple = random.choice(font_array)
     return create_char(font_tuple, random_char())
 
+def to_categorical(labels, num_classes):
+    result = np.zeros(shape=(len(labels), num_classes))
+    result[np.arange(len(labels)), labels] = 1
+    return result.astype('float32')
+
 def CharacterGenerator(batchsize):
     while True:
         x = []
@@ -166,7 +170,7 @@ def CharacterGenerator(batchsize):
             x.append(np.array(char_image).reshape(char_height,char_width,1).astype('float32') / 255.0)
             y.append(random_char.char_array.index(char))
 
-        yield np.array(x),np_utils.to_categorical(y,nb_classes=len(random_char.char_array))
+        yield np.array(x),to_categorical(y,len(random_char.char_array))
 
 
 if __name__ == "__main__":
