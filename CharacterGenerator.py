@@ -102,7 +102,7 @@ def create_char_background(background_color):
 def random_char():
     return random.choice(random_char.char_array)
 
-random_char.char_array = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+random_char.char_array = list("0123456789")
 
 def calc_text_size(text, font_tuple):
     font_name, font = font_tuple
