@@ -16,6 +16,21 @@ font_blacklist = (
     "Bodoni Ornaments", "Hoefler Text Ornaments", "ZapfDingbats", "Kokonor",
     "Farisi", "Symbol", "Diwan Thuluth", "Diwan")
 
+char_height = 32
+char_width = 32
+canvas_width = 2 * char_width
+canvas_height = 2 * char_height
+num_char_columns = 64
+num_char_rows = 32
+debug = False
+
+def calc_text_size(text, font_tuple):
+    font_name, font = font_tuple
+    try:
+        return font.getsize(text)
+    except IOError:
+        print("font.getsize failed for font:%s" % font_name)
+        raise IOError
 
 # Blacklist symbol fonts and fonts not working with PIL
 def is_font_blacklisted(font_file):
@@ -35,8 +50,17 @@ def load_fonts_in_subdir(directory_path, font_array):
     for font_file in glob.iglob(directory_path + "/*.ttf"):
         if not is_font_blacklisted(font_file):
             try:
-                font_array.append((font_file, ImageFont.truetype(font=font_file, size=16)))
-                print("adding font: %s" % font_file)
+                font_size = 16
+                text_height = 0
+                font = None
+
+                while text_height < char_height * 0.9:
+                    font = ImageFont.truetype(font=font_file, size=font_size)
+                    _,text_height = calc_text_size("0123456789", (font_file, font))
+                    font_size += 1
+
+                font_array.append((font_file, font))
+                print("adding font: %s, size %d" % (font_file, font_size - 1))
             except IOError:
                 print("Error loading font: %s" % font_file)
 
@@ -61,16 +85,7 @@ def find_fonts():
     return font_array
 
 font_array = find_fonts()
-
-char_height = 32
-char_width = 32
-canvas_width = 2 * char_width
-canvas_height = 2 * char_height
-num_char_columns = 64
-num_char_rows = 32
-debug = False
 num_fonts = len(font_array)
-current_font = 0
 
 def add_outline(draw, x, y, font, char, text_color):
     while True:
@@ -104,13 +119,6 @@ def random_char():
 
 random_char.char_array = list("0123456789")
 
-def calc_text_size(text, font_tuple):
-    font_name, font = font_tuple
-    try:
-        return font.getsize(text)
-    except IOError:
-        print("font.getsize failed for font:%s" % font_name)
-        raise IOError
 def perspective_transform(char_image):
     (w,h) = char_image.size
     bounding_box = np.array([0,0,0,h,w,h,w,0]) * 2 + (2 * np.random.rand(8) - 1) * w / 4
