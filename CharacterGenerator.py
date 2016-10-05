@@ -62,8 +62,8 @@ def find_fonts():
 
 font_array = find_fonts()
 
-char_height = 24
-char_width = 12
+char_height = 32
+char_width = 32
 canvas_width = 2 * char_width
 canvas_height = 2 * char_height
 num_char_columns = 64
