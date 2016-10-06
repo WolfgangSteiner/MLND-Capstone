@@ -56,7 +56,7 @@ def load_fonts_in_subdir(directory_path, font_array):
                 text_height = 0
                 font = None
 
-                while text_height < char_height * 0.9:
+                while text_height < char_height * 1.1:
                     font = ImageFont.truetype(font=font_file, size=font_size)
                     _,text_height = calc_text_size("0123456789", (font_file, font))
                     font_size += 1
@@ -122,7 +122,7 @@ def draw_random_line(draw):
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=color, width=width)
 
 def add_random_lines(draw):
-    n = random.randint(0,10)
+    n = random.randint(0,20)
     while n>0:
         draw_random_line(draw)
         n-=1
@@ -153,7 +153,7 @@ def perspective_transform(char_image):
 
 
 def rotate(char_image):
-    angle = random.randrange(-10,10)
+    angle = random.randrange(-5,5)
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
 
 def blur(char_image):
