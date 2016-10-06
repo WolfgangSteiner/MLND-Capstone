@@ -7,9 +7,7 @@ import pickle
 import numpy as np
 import re
 import math
-from Common import to_categorical
 from keras.utils.np_utils import to_categorical
-
 
 font_blacklist = (
     # Linux fonts
@@ -212,7 +210,11 @@ def CharacterGenerator(batchsize):
             font_tuple = random.choice(font_array)
             char = random_char()
             char_image = create_char(font_tuple, char)
-            x.append(np.array(char_image).reshape(char_height,char_width,1).astype('float32') / 255.0)
+            char_data = np.array(char_image).astype('float32') / 255.0
+            m = np.mean(char_data)
+            s = np.std(char_data)
+            char_data = (char_data - m) / s
+            x.append(char_data.reshape(char_height,char_width,1))
             y.append(random_char.char_array.index(char))
 
         yield np.array(x),to_categorical(y,len(random_char.char_array))
