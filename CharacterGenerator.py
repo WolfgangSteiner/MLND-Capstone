@@ -131,7 +131,7 @@ def add_random_lines(draw):
 
 def add_noise(image):
     w,h = image.size
-    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,32)
+    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,16)
     im_array = np.array(image).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
@@ -159,7 +159,7 @@ def rotate(char_image):
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
 
 def blur(char_image):
-    return char_image.filter(ImageFilter.GaussianBlur(radius=3.0 * random.random()))
+    return char_image.filter(ImageFilter.GaussianBlur(radius=(1.0 + random.random())))
 
 def crop(char_image):
     (w,h) = char_image.size
