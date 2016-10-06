@@ -3,10 +3,12 @@ from __future__ import print_function
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform
 import random
 import glob, os, os.path
+import pickle
 import numpy as np
 import re
+import math
 from Common import to_categorical
-import keras.utils.np_utils to_categorical
+from keras.utils.np_utils import to_categorical
 
 
 font_blacklist = (
@@ -22,7 +24,7 @@ char_height = 32
 char_width = 32
 canvas_width = 2 * char_width
 canvas_height = 2 * char_height
-num_char_columns = 64
+num_char_columns = 32
 num_char_rows = 32
 debug = False
 
@@ -112,9 +114,33 @@ def random_colors():
         if abs(text_color - background_color) > 32:
             return background_color, text_color
 
+def draw_random_line(draw):
+    p1 = np.random.random(2) * char_width
+    angle = random.random() * math.pi
+    length = random.random() * char_width
+    width = random.randint(1, char_width/2)
+    color = random.randint(0,255)
+    p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
+    draw.line((p1[0],p1[1],p2[0],p2[1]), fill=color, width=width)
+
+def add_random_lines(draw):
+    n = random.randint(0,10)
+    while n>0:
+        draw_random_line(draw)
+        n-=1
+
+def add_noise(image):
+    w,h = image.size
+    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,32)
+    im_array = np.array(image).astype(np.float32)
+    im_array = np.clip(im_array + noise, 0.0, 255.0)
+    return Image.fromarray(im_array).convert('L')
+
 def create_char_background(background_color):
-    noise = (np.random.rand(canvas_height, canvas_width) - 0.5) * random.randint(0,32) + background_color
-    return Image.fromarray(noise).convert("L")
+    char_image = Image.new('L', (canvas_width, canvas_height), background_color)
+    draw = ImageDraw.Draw(char_image)
+    add_random_lines(draw)
+    return char_image
 
 def random_char():
     return random.choice(random_char.char_array)
@@ -132,10 +158,8 @@ def rotate(char_image):
     angle = random.randrange(-10,10)
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
 
-
 def blur(char_image):
-    return char_image.filter(ImageFilter.GaussianBlur(radius=1.5 * random.random()))
-
+    return char_image.filter(ImageFilter.GaussianBlur(radius=3.0 * random.random()))
 
 def crop(char_image):
     (w,h) = char_image.size
@@ -170,8 +194,10 @@ def create_char(font_tuple, char):
 
     #char_image = perspective_transform(char_image)
     char_image = rotate(char_image)
+    char_image = crop(char_image)
     char_image = blur(char_image)
-    return crop(char_image)
+    char_image = add_noise(char_image)
+    return char_image
 
 
 def create_random_char():
