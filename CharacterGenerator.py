@@ -129,7 +129,7 @@ def add_random_lines(draw):
 
 def add_noise(image):
     w,h = image.size
-    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,16)
+    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,8)
     im_array = np.array(image).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
