@@ -111,7 +111,7 @@ def prepare_svhn():
 
 
 model = Sequential()
-model.add(convnet(32,64,128, (32,32,1)))
+model.add(convnet(64,128,256, (32,32,1)))
 model.add(Flatten())
 model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
 #model.add(BatchNormalization())
