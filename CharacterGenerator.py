@@ -185,12 +185,12 @@ def create_char(font_tuple, char):
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
 
-    if random.random() > 0.25:
+    if random.random() > 0.5:
         text = random_char() + text
         (w2,h2) = calc_text_size(text, font_tuple)
         x -= (w2 - w)
 
-    if random.random() > 0.25:
+    if random.random() > 0.5:
         text = text + random_char()
 
     if random.random() > 0.5:
