@@ -163,6 +163,14 @@ def crop(char_image):
     (w,h) = char_image.size
     return char_image.crop((w/4, h/4, w * 3 / 4, h * 3 / 4))
 
+def normalize(char_image, factor):
+    array = np.array(char_image).astype(np.float32)
+    m = np.mean(array)
+    s = np.std(array)
+    array = (array - m) / (s * factor)
+    array = np.clip(array, 0.0, 255.0)
+    return Image.fromarray(array).convert('L')
+
 
 def create_char(font_tuple, char):
     font = font_tuple[1]
