@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.io import loadmat
 from keras.utils.np_utils import to_categorical
-
+from PIL import Image
 
 def load_svhn(file_name):
     mat = loadmat(file_name)
@@ -24,3 +24,7 @@ def load_svhn(file_name):
     X = X.reshape(-1,32,32,1)
                                             
     return X,y
+
+
+def display_char(char_data):
+    Image.fromarray(char_data.reshape(32,32)*255).show()
