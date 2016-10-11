@@ -18,15 +18,65 @@ num_classes = 10 #+ 26*2
 
 def inception(depth, input_shape):
     input = Input(shape=input_shape)
-    tower1 = Convolution2D(depth, 1, 1, border_mode='same', activation='relu')(input)
-    tower1 = Convolution2D(depth, 3, 3, border_mode='same', activation='relu')(tower1)
-    tower2 = Convolution2D(depth, 1, 1, border_mode='same', activation='relu')(input)
-    tower2 = Convolution2D(depth, 5, 5, border_mode='same', activation='relu')(tower2)
+    tower1 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01))(input)
+    tower1 = Activation('relu')(tower1)
+    tower1 = Convolution2D(depth, 3, 3, border_mode='same', W_regularizer=l2(0.01))(tower1)
+    tower1 = Activation('relu')(tower1)
+
+    tower2 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01))(input)
+    tower2 = Activation('relu')(tower2)
+    tower2 = Convolution2D(depth, 5, 5, border_mode='same', W_regularizer=l2(0.01))(tower2)
+    tower2 = Activation('relu')(tower2)
+
     tower3 = MaxPooling2D((3, 3), strides=(1, 1), border_mode='same')(input)
-    tower3 = Convolution2D(depth, 1, 1, border_mode='same', activation='relu')(tower3)
-    tower4 = Convolution2D(depth, 1, 1, border_mode='same', activation='relu')(input)
+    tower3 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01))(tower3)
+    tower3 = Activation('relu')(tower3)
+
+    tower4 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01))(input)
+    tower4 = Activation('relu')(tower4)
     output = merge([tower1, tower2, tower3, tower4], mode='concat')
     return Model(input, output)
+
+
+def convolution(depth, input_shape):
+    model = Sequential()
+    model.add(Convolution2D(32, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01), input_shape=(32,32,1)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    #model.add(SpatialDropout2D(0.5))
+
+    model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
+
+    model.add(Convolution2D(depth * 2, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    #model.add(SpatialDropout2D(0.5))
+
+    model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
+
+    model.add(Convolution2D(depth * 4, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+
+    model.add(Convolution2D(depth * 4, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    #model.add(SpatialDropout2D(0.5))
+
+    model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
+
+    model.add(Convolution2D(depth * 8, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+
+    model.add(Convolution2D(depth * 8, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    #model.add(SpatialDropout2D(0.5))
+
+    model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
+
+    return model
 
 
 def are_elements_unique(a):
@@ -66,7 +116,7 @@ def prepare_svhn():
 
         idx_val_train += idx1.tolist()
         idx_val_extra += idx2.tolist()
-    
+
         X_train = np.delete(X_train, idx_val_train, axis=0)
         y_train = np.delete(y_train, idx_val_train, axis=0)
         X_extra = np.delete(X_extra, idx_val_extra, axis=0)
@@ -79,43 +129,7 @@ def prepare_svhn():
 
 
 model = Sequential()
-
-model.add(Convolution2D(32, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01), input_shape=(32,32,1)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-#model.add(SpatialDropout2D(0.5))
-
-model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
-
-model.add(Convolution2D(64, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-#model.add(SpatialDropout2D(0.5))
-
-model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
-
-model.add(Convolution2D(128, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-
-model.add(Convolution2D(128, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-#model.add(SpatialDropout2D(0.5))
-
-model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
-
-model.add(Convolution2D(256, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-
-model.add(Convolution2D(256, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-model.add(BatchNormalization())
-model.add(Activation('relu'))
-#model.add(SpatialDropout2D(0.5))
-
-model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
-
+model.add(inception(32, (32,32,1)))
 model.add(Flatten())
 model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
 model.add(BatchNormalization())
