@@ -4,6 +4,8 @@ import numpy as np
 from keras.models import load_model
 from time import sleep
 
+char_size = 32
+
 def preprocess_image(image):
     width, height = image.size
     min_dim = min(width,height) / 2
@@ -15,8 +17,12 @@ def preprocess_image(image):
     bottom = (height + min_dim)/2
     clip_rect = (left, top, right, bottom)
 
-    image = image.crop(clip_rect).resize((24, 24), Image.LANCZOS)
-    image_data = np.array(image).reshape(1,24,24,1).astype('float32') / 255.0
+    image = image.crop(clip_rect).resize((char_size, char_size), Image.LANCZOS)
+    image_data = np.array(image).astype('float32') / 255.0
+    m = np.mean(image_data, axis=(0,1))
+    s = np.std(image_data, axis=(0,1))
+    image_data = (image_data - m) / s
+    image_data = image_data.reshape(1,char_size,char_size,1)
     return image_data, clip_rect
 
 
@@ -44,7 +50,7 @@ def draw_probability(cv_img, p):
     cv2.putText(cv_img, "%.3f" % p, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
-model=load_model('inception01.hdf')
+model=load_model('checkpoint.hdf5')
 
 cap = cv2.VideoCapture(0)
 
@@ -78,4 +84,3 @@ while(True):
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
-1  2  354567888976543432
