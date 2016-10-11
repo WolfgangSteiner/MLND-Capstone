@@ -231,7 +231,6 @@ def CharacterGenerator(batchsize):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    generator = CharacterGenerator(num_char_columns)
 
     for j in range(0,num_char_rows):
         batch = generator.next()
