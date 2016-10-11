@@ -81,7 +81,7 @@ def find_fonts_in_directory(directory_path):
 
 def find_fonts():
     font_array = []
-    for font_dir in ("fonts-master/ofl",):
+    for font_dir in ("fonts-master/ofl", "fonts-master/apache", ):
         font_array += find_fonts_in_directory(font_dir)
 
     return font_array
