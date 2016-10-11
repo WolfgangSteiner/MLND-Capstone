@@ -131,7 +131,7 @@ def prepare_svhn():
 model = Sequential()
 model.add(inception(32, (32,32,1)))
 model.add(MaxPooling2D())
-model.add(inception(64, (32,32,32 * 4)))
+model.add(inception(64, (16,16,32 * 4)))
 model.add(MaxPooling2D())
 model.add(Flatten())
 model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
