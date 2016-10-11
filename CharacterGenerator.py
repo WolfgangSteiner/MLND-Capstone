@@ -220,7 +220,7 @@ def CharacterGenerator(batchsize):
             char_image = create_char(font_tuple, char)
             char_data = np.array(char_image).astype('float32') / 255.0
             m = np.mean(char_data, axis=(0,1))
-            s = np.std(char_data, axis=(0,1)))
+            s = np.std(char_data, axis=(0,1))
             char_data = (char_data - m) / s
             x.append(char_data.reshape(char_height,char_width,1))
             y.append(random_char.char_array.index(char))
