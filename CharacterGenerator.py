@@ -56,7 +56,7 @@ def load_fonts_in_subdir(directory_path, font_array):
                 text_height = 0
                 font = None
 
-                while text_height < char_height * 1.1:
+                while text_height < char_height * 1.0:
                     font = ImageFont.truetype(font=font_file, size=font_size)
                     _,text_height = calc_text_size("0123456789", (font_file, font))
                     font_size += 1
