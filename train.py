@@ -38,43 +38,25 @@ def inception(depth, input_shape):
     return Model(input, output)
 
 
-def convolution(depth, input_shape):
+def convnet(d1,d2,d3, input_shape):
     model = Sequential()
-    model.add(Convolution2D(32, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01), input_shape=(32,32,1)))
+
+    model.add(Convolution2D(d1, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01), input_shape=(32,32,1)))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     #model.add(SpatialDropout2D(0.5))
-
     model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
 
-    model.add(Convolution2D(depth * 2, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(Convolution2D(d2, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     #model.add(SpatialDropout2D(0.5))
-
     model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
 
-    model.add(Convolution2D(depth * 4, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+    model.add(Convolution2D(d3, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-
-    model.add(Convolution2D(depth * 4, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    #model.add(SpatialDropout2D(0.5))
-
     model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
-
-    model.add(Convolution2D(depth * 8, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-
-    model.add(Convolution2D(depth * 8, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    #model.add(SpatialDropout2D(0.5))
-
-    model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
 
     return model
 
@@ -129,10 +111,7 @@ def prepare_svhn():
 
 
 model = Sequential()
-model.add(inception(32, (32,32,1)))
-model.add(MaxPooling2D())
-model.add(inception(64, (16,16,32 * 4)))
-model.add(MaxPooling2D())
+model.add(convnet(32,64,128, (32,32,1)))
 model.add(Flatten())
 model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
 #model.add(BatchNormalization())
