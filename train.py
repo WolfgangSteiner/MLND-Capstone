@@ -119,7 +119,7 @@ tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False,
 generator = CharacterGenerator.CharacterGenerator(batch_size)
 model.fit_generator(
     generator, 16384, 1000,
-    validation_data = generator,
+    validation_data = CharacterGenerator.CharacterGenerator(4096).next(),
     nb_val_samples = batch_size * 32,
     callbacks = [model_checkpoint ,reduce_learning_rate, tensorboard],
     max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
