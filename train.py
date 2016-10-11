@@ -5,12 +5,13 @@ from keras.models import Model, Sequential
 from keras.optimizers import SGD, Adagrad
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
-from keras.constraints import maxnorm
+from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2, activity_l2
 from keras.callbacks import TensorBoard
 from Common import load_svhn
 import numpy as np
 import random
+from keras.layers.core import SpatialDropout2D
 
 
 num_classes = 10 #+ 26*2
@@ -79,23 +80,53 @@ def prepare_svhn():
 
 model = Sequential()
 
-model.add(Convolution2D(16, 3, 3, border_mode='same', activation='relu', init='glorot_normal', input_shape=(32,32,1)))
-model.add(MaxPooling2D())
+model.add(Convolution2D(32, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01), input_shape=(32,32,1)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+#model.add(SpatialDropout2D(0.5))
 
-model.add(Convolution2D(32, 3, 3, border_mode='same', activation='relu', init='glorot_normal'))
-model.add(MaxPooling2D())
+model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
 
-model.add(Convolution2D(64, 3, 3, border_mode='same', activation='relu', init='glorot_normal'))
-model.add(MaxPooling2D())
+model.add(Convolution2D(64, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+#model.add(SpatialDropout2D(0.5))
 
-#model.add(Convolution2D(128, 3, 3, border_mode='same', activation='relu', init='glorot_normal'))
-#model.add(MaxPooling2D())
+model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
+
+model.add(Convolution2D(128, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+
+model.add(Convolution2D(128, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+#model.add(SpatialDropout2D(0.5))
+
+model.add(MaxPooling2D(pool_size=(3,3),strides=(2,2)))
+
+model.add(Convolution2D(256, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+
+model.add(Convolution2D(256, 3, 3, border_mode='same', init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+#model.add(SpatialDropout2D(0.5))
+
+model.add(MaxPooling2D(pool_size=(3,3),strides=(1,1)))
 
 model.add(Flatten())
-model.add(Dense(256, activation='relu', init='glorot_normal'))
-#model.add(Dropout(0.5))
-model.add(Dense(256, activation='relu', init='glorot_normal'))
+model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
 model.add(Dropout(0.5))
+
+model.add(Dense(256, init='glorot_normal', W_regularizer=l2(0.01)))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+
 model.add(Dense(num_classes, init='glorot_normal'))
 model.add(Activation('softmax'))
 
@@ -106,15 +137,23 @@ model.compile(
     loss='categorical_crossentropy',
     metrics=['accuracy'])
 
-
 batch_size = 32
-
-
 model_checkpoint = ModelCheckpoint("checkpoint.hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
-
 reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
 
 tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
+#X_train, y_train = CharacterGenerator.CharacterGenerator(16384).next()
+#model.fit(
+#    X_train, y_train,
+#    batch_size=32,
+#    nb_epoch=500,
+#    verbose=1,
+#    callbacks = [model_checkpoint ,reduce_learning_rate, tensorboard],
+#    validation_split=0.0,
+#    validation_data=CharacterGenerator.CharacterGenerator(1024).next(),
+#    shuffle=True,
+#    class_weight=None,
+#    sample_weight=None)
 
 generator = CharacterGenerator.CharacterGenerator(batch_size)
 model.fit_generator(
