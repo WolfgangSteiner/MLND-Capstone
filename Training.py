@@ -111,17 +111,19 @@ def prepare_svhn():
 
 
 class Training(object):
-    def __init__(self, batch_size=32, input_shape=(32,32,1)):
+    def __init__(self, batch_size=32, input_shape=(32,32,1), mean=None, std=None):
         self.model = Sequential()
         self.batch_size = batch_size
         self.input_shape=input_shape
+        self.mean = mean
+        self.std = std
         self.is_first_layer = True
         self.is_first_dense_layer = True
         self.winit = 'glorot_normal'
         self.wreg = 0.01
         self.use_batchnorm = True
         self.output_file_stem = argv[0].split(".")[0]
-        self.generator = CharacterGenerator.CharacterGenerator(batch_size)
+        self.generator = CharacterGenerator.CharacterGenerator(batch_size, mean, std)
         self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
         self.reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
@@ -181,9 +183,10 @@ class Training(object):
 
     def train_generator(self):
         self.compile()
+        X_val, y_val = CharacterGenerator.CharacterGenerator(4096, self.mean, self.std).next()
         self.model.fit_generator(
             self.generator, 16384 * 8, 1000,
-            validation_data = CharacterGenerator.CharacterGenerator(4096).next(),
+            validation_data = (X_val, y_val),
             nb_val_samples = self.batch_size * 32,
             callbacks = self.callbacks,
             max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
