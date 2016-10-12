@@ -12,7 +12,7 @@ from Common import load_svhn
 import numpy as np
 import random
 from keras.layers.core import SpatialDropout2D
-
+from sys import argv
 
 num_classes = 10 #+ 26*2
 
@@ -115,14 +115,16 @@ class Training(object):
         self.model = Sequential()
         self.batch_size = batch_size
         self.input_shape=input_shape
-        self.generator = CharacterGenerator.CharacterGenerator(batch_size)
         self.is_first_layer = True
         self.is_first_dense_layer = True
         self.winit = 'glorot_normal'
         self.wreg = 0.01
         self.use_batchnorm = True
+        self.output_file = argv[0].split(".")[0] + ".hdf5"
+        print("output_file: " + self.output_file)
+        self.generator = CharacterGenerator.CharacterGenerator(batch_size)
         self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
-        self.model_checkpoint = ModelCheckpoint("checkpoint.hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
+        self.model_checkpoint = ModelCheckpoint(self.output_file, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
         self.reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
         self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
 
