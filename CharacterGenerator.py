@@ -210,7 +210,7 @@ def create_random_char():
     font_tuple = random.choice(font_array)
     return create_char(font_tuple, random_char())
 
-def CharacterGenerator(batchsize):
+def CharacterGenerator(batchsize, mean=None, std=None):
     while True:
         x = []
         y = []
@@ -218,10 +218,13 @@ def CharacterGenerator(batchsize):
             font_tuple = random.choice(font_array)
             char = random_char()
             char_image = create_char(font_tuple, char)
-            char_data = np.array(char_image).astype('float32') / 255.0
-            m = np.mean(char_data, axis=(0,1))
-            s = np.std(char_data, axis=(0,1))
-            char_data = (char_data - m) / s
+            char_data = np.array(char_image).astype('float32')
+
+            if mean == None:
+                mean = np.mean(char_data, axis=(0,1))
+                std = np.std(char_data, axis=(0,1))
+            char_data = (char_data - mean) / std / 255.0
+
             x.append(char_data.reshape(char_height,char_width,1))
             y.append(random_char.char_array.index(char))
 
