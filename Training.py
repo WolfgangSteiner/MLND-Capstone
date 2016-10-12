@@ -1,4 +1,4 @@
-import CharacterGenerator
+from CharacterGenerator import CharacterGenerator
 from keras.layers import Input, merge
 from keras.layers import Dense, Dropout, Convolution2D, MaxPooling2D, Flatten, Reshape, Activation
 from keras.models import Model, Sequential
@@ -123,7 +123,7 @@ class Training(object):
         self.wreg = 0.01
         self.use_batchnorm = True
         self.output_file_stem = argv[0].split(".")[0]
-        self.generator = CharacterGenerator.CharacterGenerator(batch_size, mean, std)
+        self.generator = CharacterGenerator(batch_size, mean, std)
         self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
         self.reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
@@ -183,7 +183,7 @@ class Training(object):
 
     def train_generator(self):
         self.compile()
-        X_val, y_val = CharacterGenerator.CharacterGenerator(4096, self.mean, self.std).next()
+        X_val, y_val = CharacterGenerator(4096, self.mean, self.std).next()
         self.model.fit_generator(
             self.generator, 16384 * 8, 1000,
             validation_data = (X_val, y_val),
@@ -194,6 +194,29 @@ class Training(object):
     def train_svhn(self):
         self.compile()
         X_train, y_train, X_val, y_val = prepare_svhn()
+        self.model.fit(
+            X_train, y_train,
+            batch_size=32,
+            nb_epoch=500,
+            verbose=1,
+            callbacks = self.callbacks,
+            validation_split=0.0,
+            validation_data=(X_val,y_val),
+            shuffle=True,
+            class_weight=None,
+            sample_weight=None)
+
+    def train_both(self):
+        self.compile()
+        X_train_svhn, y_train_svhn, X_val_svhn, y_val_svhn = prepare_svhn()
+        X_train_gen, y_train_gen = CharacterGenerator(X_train_svhn.shape[0]).next()
+        X_val_gen, y_val_gen = CharacterGenerator(X_val_svhn.shape[0]).next()
+
+        X_train = np.append(X_train_svhn, X_train_gen, axis=0)
+        y_train = np.append(y_train_svhn, y_train_gen, axis=0)
+        X_val = np.append(X_val_svhn, X_val_gen, axis=0)
+        y_val = np.append(y_val_svhn, y_val_gen, axis=0)
+
         self.model.fit(
             X_train, y_train,
             batch_size=32,
