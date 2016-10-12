@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2, activity_l2
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, CSVLogger
 from Common import load_svhn
 import numpy as np
 import random
@@ -120,13 +120,14 @@ class Training(object):
         self.winit = 'glorot_normal'
         self.wreg = 0.01
         self.use_batchnorm = True
-        self.output_file = argv[0].split(".")[0] + ".hdf5"
-        print("output_file: " + self.output_file)
+        self.output_file_stem = argv[0].split(".")[0]
         self.generator = CharacterGenerator.CharacterGenerator(batch_size)
         self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
-        self.model_checkpoint = ModelCheckpoint(self.output_file, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
+        self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
         self.reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
         self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
+        self.csv_logger = CSVLogger(self.output_file_stem + ".log")
+        self.callbacks = [self.model_checkpoint, self.reduce_learning_rate, self.tensorboard, self.csv_logger]
 
     def compile(self):
         self.model.compile(
@@ -184,7 +185,7 @@ class Training(object):
             self.generator, 16384 * 8, 1000,
             validation_data = CharacterGenerator.CharacterGenerator(4096).next(),
             nb_val_samples = self.batch_size * 32,
-            callbacks = [self.model_checkpoint, self.reduce_learning_rate, self.tensorboard],
+            callbacks = self.callbacks,
             max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
 
     def train_svhn(self):
@@ -195,7 +196,7 @@ class Training(object):
             batch_size=32,
             nb_epoch=500,
             verbose=1,
-            callbacks = [self.model_checkpoint, self.reduce_learning_rate, self.tensorboard],
+            callbacks = self.callbacks,
             validation_split=0.0,
             validation_data=(X_val,y_val),
             shuffle=True,
