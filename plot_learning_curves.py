@@ -4,8 +4,6 @@ from sys import argv
 import matplotlib.pyplot as plt
 
 data = pd.read_csv(argv[1])
-print data
-
 fig, ax = plt.subplots()
 
 plt.plot(data['epoch'], data['acc'], label="training")
