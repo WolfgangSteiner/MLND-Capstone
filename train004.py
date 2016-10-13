@@ -1,0 +1,10 @@
+from Training import Training
+t = Training()
+t.conv(16)
+t.maxpool()
+t.conv(32)
+t.maxpool()
+t.dense(64)
+t.dropout(0.5)
+t.classifier(10)
+t.train_generator()
