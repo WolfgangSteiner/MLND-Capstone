@@ -183,11 +183,11 @@ class Training(object):
 
     def train_generator(self):
         self.compile()
-        X_val, y_val = CharacterGenerator(4096, self.mean, self.std).next()
+        X_val, y_val = CharacterGenerator(2048, self.mean, self.std).next()
         self.model.fit_generator(
-            self.generator, 16384 * 8, 1000,
+            self.generator, 16384, 1000,
             validation_data = (X_val, y_val),
-            nb_val_samples = self.batch_size * 32,
+            nb_val_samples = None,
             callbacks = self.callbacks,
             max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
 
