@@ -198,6 +198,7 @@ def create_char(font_tuple, char, options={}):
     if random.random() > 0.5:
         add_outline(draw, x, y, font, text, text_color)
 
+    y -= font.getoffset(text)[1] / 2
     draw.text((x,y), text, font=font, fill=text_color)
 
     #char_image = perspective_transform(char_image)
