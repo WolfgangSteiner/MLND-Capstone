@@ -22,14 +22,16 @@ char_height = 32
 char_width = 32
 canvas_width = 2 * char_width
 canvas_height = 2 * char_height
-num_char_columns = 32
+num_char_columns = 16
 num_char_rows = 32
 debug = False
 
 def calc_text_size(text, font_tuple):
     font_name, font = font_tuple
     try:
-        return font.getsize(text)
+        (w,h) = font.getsize(text)
+        h -= font.getoffset(text)[1]
+        return (w,h)
     except IOError:
         print("font.getsize failed for font:%s" % font_name)
         raise IOError
@@ -56,7 +58,7 @@ def load_fonts_in_subdir(directory_path, font_array):
                 text_height = 0
                 font = None
 
-                while text_height < char_height * 1.0:
+                while text_height < char_height * 0.9:
                     font = ImageFont.truetype(font=font_file, size=font_size)
                     _,text_height = calc_text_size("0123456789", (font_file, font))
                     font_size += 1
@@ -198,7 +200,7 @@ def create_char(font_tuple, char, options={}):
     if random.random() > 0.5:
         add_outline(draw, x, y, font, text, text_color)
 
-    y -= font.getoffset(text)[1] / 2
+    y -= font.getoffset(text)[1]
     draw.text((x,y), text, font=font, fill=text_color)
 
     #char_image = perspective_transform(char_image)
@@ -243,8 +245,7 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'max_noise':16}
-
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple = random.choice(font_array)
