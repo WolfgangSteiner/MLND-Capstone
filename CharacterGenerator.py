@@ -106,27 +106,26 @@ def add_outline(draw, x, y, font, char, text_color):
 def displacement():
     return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
 
-def random_colors(min_color_delta=32):
-    background_color = random.randint(0,255)
+def random_background_color(text_color, min_color_delta=32):
     while True:
-        text_color = random.randint(0,255)
+        background_color = random.randint(0,255)
         # find a text color that has a minimum amount of contrast against background_color:
         if abs(text_color - background_color) > min_color_delta:
-            return background_color, text_color
+            return background_color
 
-def draw_random_line(draw):
+def draw_random_line(draw, text_color, min_color_delta):
     p1 = np.random.random(2) * char_width
     angle = random.random() * math.pi
     length = random.random() * char_width
     width = random.randint(1, char_width/2)
-    color = random.randint(0,255)
+    color = random_background_color(text_color, min_color_delta=min_color_delta)
     p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=color, width=width)
 
-def add_random_lines(draw):
+def add_random_lines(draw, text_color, min_color_delta):
     n = random.randint(0,20)
     while n>0:
-        draw_random_line(draw)
+        draw_random_line(draw, text_color, min_color_delta)
         n-=1
 
 def add_noise(image, options={}):
@@ -138,10 +137,10 @@ def add_noise(image, options={}):
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
 
-def create_char_background(background_color):
+def create_char_background(text_color, background_color, min_color_delta):
     char_image = Image.new('L', (canvas_width, canvas_height), background_color)
     draw = ImageDraw.Draw(char_image)
-    add_random_lines(draw)
+    add_random_lines(draw, text_color, min_color_delta)
     return char_image
 
 def random_char():
@@ -180,10 +179,11 @@ def create_char(font_tuple, char, options={}):
     font = font_tuple[1]
     font_name = font_tuple[0]
     min_color_delta = options.get('min_color_delta', 32)
-    background_color, text_color = random_colors(min_color_delta=min_color_delta)
+    text_color = random.randint(0,255)
+    background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char
 
-    char_image = create_char_background(background_color)
+    char_image = create_char_background(text_color, background_color, min_color_delta)
     draw = ImageDraw.Draw(char_image)
 
     (w,h) = calc_text_size(text, font_tuple)
