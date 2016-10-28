@@ -20,7 +20,7 @@ def load_svhn(file_name, mean=None, std=None):
         if mean == None:
             mean = np.mean(X[i,...], axis=(0,1))
             std = np.std(X[i,...], axis=(0,1))
-        X[i,...] = (X[i,...] - mean) / std / 255.0
+        X[i,...] = (X[i,...] - mean) / std
 
     X = X.reshape(-1,32,32,1)
 
