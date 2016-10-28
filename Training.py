@@ -1,6 +1,7 @@
 from CharacterGenerator import CharacterGenerator
 from keras.layers import Input, merge
-from keras.layers import Dense, Dropout, Convolution2D, MaxPooling2D, Flatten, Reshape, Activation
+from keras.layers import Dense, Dropout, Convolution2D, Flatten, Reshape, Activation
+from keras.layers import MaxPooling2D, AveragePooling2D
 from keras.models import Model, Sequential
 from keras.optimizers import SGD, Adagrad
 from keras.callbacks import ModelCheckpoint
@@ -16,7 +17,7 @@ from sys import argv
 
 num_classes = 10 #+ 26*2
 
-def inception(depth, input_shape):
+def create_inception(depth, input_shape):
     input = Input(shape=input_shape)
     tower1 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
     tower1 = Activation('relu')(tower1)
@@ -65,16 +66,21 @@ def are_elements_unique(a):
     u, i = np.unique(a, return_inverse=True)
     return len(u[np.bincount(i) > 1]) == 0
 
-def prepare_svhn():
+def prepare_svhn(options={}):
+    n_val = options.get('n_val', 600)
+    n_train = options.get('n_train', 1600)
+    num_extra_data = options.get('num_extra_data', None)
+
     print "Loading data..."
     X_train,y_train = load_svhn("train_32x32.mat")
     X_extra,y_extra = load_svhn("extra_32x32.mat")
 
     print "Preparing data..."
     num_classes = 10
-    n1 = 400
-    n2 = 200
-    n_val = n1+n2
+
+    n1 = n_val * 2 / 3
+    n2 = n_val / 3
+    n_val = n1 + n2
     y_val = np.empty((n_val * num_classes,num_classes))
     X_val = np.empty((n_val * num_classes, 32, 32, 1))
 
@@ -82,32 +88,41 @@ def prepare_svhn():
     idx_val_extra = []
 
     for c in range(0,num_classes):
+        print("%d " % c)
         idx1 = np.where(y_train[:,c]==1.0)[0]
         idx2 = np.where(y_extra[:,c]==1.0)[0]
         np.random.shuffle(idx1)
         np.random.shuffle(idx2)
         idx1 = idx1[:n1]
         idx2 = idx2[:n2]
-
         idxi = n_val * c
 
-        y_val[c*n_val:c*n_val+n1] = y_train[idx1]
-        y_val[c*n_val+n1:(c+1)*n_val] = y_extra[idx2]
-        X_val[c*n_val:c*n_val+n1] = X_train[idx1]
-        X_val[c*n_val+n1:(c+1)*n_val] = X_extra[idx2]
+        y_val[idxi:idxi+n1] = y_train[idx1]
+        y_val[idxi+n1:idxi+n_val] = y_extra[idx2]
+        X_val[idxi:idxi+n1] = X_train[idx1]
+        X_val[idxi+n1:idxi+n_val] = X_extra[idx2]
 
         idx_val_train += idx1.tolist()
         idx_val_extra += idx2.tolist()
 
-        X_train = np.delete(X_train, idx_val_train, axis=0)
-        y_train = np.delete(y_train, idx_val_train, axis=0)
-        X_extra = np.delete(X_extra, idx_val_extra, axis=0)
-        y_extra = np.delete(y_extra, idx_val_extra, axis=0)
+    X_train = np.delete(X_train, idx_val_train, axis=0)
+    y_train = np.delete(y_train, idx_val_train, axis=0)
+    X_extra = np.delete(X_extra, idx_val_extra, axis=0)
+    y_extra = np.delete(y_extra, idx_val_extra, axis=0)
 
+    if num_extra_data == None:
         X_train = np.append(X_train, X_extra, axis=0)
         y_train = np.append(y_train, y_extra, axis=0)
+    elif num_extra_data > 0:
+        id_extra = range(0,X_extra.shape[0])
+        np.random.shuffle(id_extra)
+        id_extra = id_extra[:num_extra_data]
+        X_train = np.append(X_train, X_extra[id_extra], axis=0)
+        y_train = np.append(y_train, y_extra[id_extra], axis=0)
 
-        return X_train, y_train, X_val, y_val
+
+    print("\n")
+    return X_train, y_train, X_val, y_val
 
 
 class Training(object):
@@ -123,13 +138,26 @@ class Training(object):
         self.wreg = 0.01
         self.use_batchnorm = True
         self.output_file_stem = argv[0].split(".")[0]
-        self.generator = CharacterGenerator(batch_size, mean, std)
+        self.generator_options = {}
         self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
-        self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto')
-        self.reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, verbose=1, mode='auto', epsilon=0.0001, cooldown=4, min_lr=0)
+        self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
         self.csv_logger = CSVLogger(self.output_file_stem + ".log")
-        self.callbacks = [self.model_checkpoint, self.reduce_learning_rate, self.tensorboard, self.csv_logger]
+
+
+    def callbacks(self, options):
+        result = []
+        patience = options.get('lr_patience', 4)
+        factor = options.get('lr_factor', 0.5)
+        cooldown = options.get('lr_cooldown', 4)
+        min_lr = options.get('lr_min', 0)
+        reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=factor, patience=patience, verbose=1, mode='auto', epsilon=0.0001, cooldown=cooldown, min_lr=min_lr)
+        result.append(reduce_learning_rate)
+
+        for c in (self.tensorboard, self.model_checkpoint, self.csv_logger, self.tensorboard):
+            if not c is None:
+                result.append(c)
+        return result
 
     def compile(self):
         self.model.compile(
@@ -138,18 +166,20 @@ class Training(object):
             metrics=['accuracy'])
 
     def conv(self, depth, filter_size=3):
-        conv_layer = Convolution2D(depth, filter_size, filter_size, W_regularizer=l2(self.wreg))
-
         if self.is_first_layer:
-            conv_layer = Convolution2D(depth, filter_size, filter_size, W_regularizer=l2(self.wreg), input_shape=self.input_shape)
+            conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg), input_shape=self.input_shape)
             self.is_first_layer = False
         else:
-            conv_layer = Convolution2D(depth, filter_size, filter_size, W_regularizer=l2(self.wreg))
+            conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg))
 
         self.model.add(conv_layer)
         if self.use_batchnorm:
             self.model.add(BatchNormalization())
         self.model.add(Activation('relu'))
+
+    def inception(self, depth):
+        self.is_first_layer = False
+        self.model.add(create_inception(depth, self.input_shape))
 
     def dense(self, output_size):
         if self.is_first_layer:
@@ -177,38 +207,43 @@ class Training(object):
     def maxpool(self):
         self.model.add(MaxPooling2D())
 
+    def avgpool(self):
+        self.model.add(AveragePooling2D())
+
 
     def dropout(self, p):
         self.model.add(Dropout(p))
 
-    def train_generator(self):
+    def train_generator(self, options={}):
         self.compile()
-        X_val, y_val = CharacterGenerator(2048, self.mean, self.std).next()
+        X_val, y_val = CharacterGenerator(2048, self.generator_options).next()
+        generator = CharacterGenerator(self.batch_size, self.generator_options)
+
         self.model.fit_generator(
-            self.generator, 16384, 1000,
+            generator, 16384, 1000,
             validation_data = (X_val, y_val),
             nb_val_samples = None,
-            callbacks = self.callbacks,
+            callbacks = self.callbacks(options),
             max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
 
-    def train_svhn(self):
+    def train_svhn(self, options={}):
         self.compile()
-        X_train, y_train, X_val, y_val = prepare_svhn()
+        X_train, y_train, X_val, y_val = prepare_svhn(options)
         self.model.fit(
             X_train, y_train,
             batch_size=32,
             nb_epoch=500,
             verbose=1,
-            callbacks = self.callbacks,
+            callbacks = self.callbacks(options),
             validation_split=0.0,
             validation_data=(X_val,y_val),
             shuffle=True,
             class_weight=None,
             sample_weight=None)
 
-    def train_both(self):
+    def train_both(self, **options):
         self.compile()
-        X_train_svhn, y_train_svhn, X_val_svhn, y_val_svhn = prepare_svhn()
+        X_train_svhn, y_train_svhn, X_val_svhn, y_val_svhn = prepare_svhn(options)
         X_train_gen, y_train_gen = CharacterGenerator(X_train_svhn.shape[0]).next()
         X_val_gen, y_val_gen = CharacterGenerator(X_val_svhn.shape[0]).next()
 
@@ -222,7 +257,7 @@ class Training(object):
             batch_size=32,
             nb_epoch=500,
             verbose=1,
-            callbacks = self.callbacks,
+            callbacks = self.callbacks(options),
             validation_split=0.0,
             validation_data=(X_val,y_val),
             shuffle=True,
