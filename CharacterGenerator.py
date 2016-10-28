@@ -236,7 +236,6 @@ if __name__ == "__main__":
     overview_draw = ImageDraw.Draw(overview_image)
 
     for j in range(0,num_char_rows):
-        batch = generator.next()
         for i in range(0,num_char_columns):
             font_tuple = random.choice(font_array)
             char = random_char()
