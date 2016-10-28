@@ -70,7 +70,7 @@ while(True):
 
     draw_clip_rect(frame, clip_rect)
 
-    if (probability > 0.5):
+    if (probability > 0.85):
         draw_answer(frame, clip_rect, ans)
 
     draw_probability(frame, probability)
