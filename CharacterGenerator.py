@@ -104,12 +104,12 @@ def add_outline(draw, x, y, font, char, text_color):
 def displacement():
     return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
 
-def random_colors():
+def random_colors(min_color_delta=32):
     background_color = random.randint(0,255)
     while True:
         text_color = random.randint(0,255)
         # find a text color that has a minimum amount of contrast against background_color:
-        if abs(text_color - background_color) > 32:
+        if abs(text_color - background_color) > min_color_delta:
             return background_color, text_color
 
 def draw_random_line(draw):
@@ -151,13 +151,15 @@ def perspective_transform(char_image):
     transformation = ImageTransform.QuadTransform(bounding_box)
     return char_image.transform((w * 2, h * 2), transformation, resample=Image.BICUBIC)
 
-
-def rotate(char_image):
-    angle = random.randrange(-5,5)
+def rotate(char_image, options={}):
+    max_rotation=options.get('max_rotation', 5)
+    angle = random.randrange(-max_rotation,max_rotation)
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
 
-def blur(char_image):
-    return char_image.filter(ImageFilter.GaussianBlur(radius=(1.0 + random.random())))
+def blur(char_image, options={}):
+    min_blur = options.get("min_blur", 1.0)
+    max_blur = options.get('max_blur', 2.0)
+    return char_image.filter(ImageFilter.GaussianBlur(radius=(min_blur + (max_blur - min_blur) * random.random())))
 
 def crop(char_image):
     (w,h) = char_image.size
@@ -167,15 +169,15 @@ def normalize(char_image, factor):
     array = np.array(char_image).astype(np.float32)
     m = np.mean(array)
     s = np.std(array)
-    array = (array - m) / (s * factor)
     array = np.clip(array, 0.0, 255.0)
     return Image.fromarray(array).convert('L')
 
 
-def create_char(font_tuple, char):
+def create_char(font_tuple, char, options={}):
     font = font_tuple[1]
     font_name = font_tuple[0]
-    background_color, text_color = random_colors()
+    min_color_delta = options.get('min_color_delta', 32)
+    background_color, text_color = random_colors(min_color_delta=min_color_delta)
     text = char
 
     char_image = create_char_background(background_color)
@@ -199,9 +201,9 @@ def create_char(font_tuple, char):
     draw.text((x,y), text, font=font, fill=text_color)
 
     #char_image = perspective_transform(char_image)
-    char_image = rotate(char_image)
+    char_image = rotate(char_image, options)
     char_image = crop(char_image)
-    char_image = blur(char_image)
+    char_image = blur(char_image, options)
     char_image = add_noise(char_image)
     return char_image
 
@@ -210,20 +212,18 @@ def create_random_char():
     font_tuple = random.choice(font_array)
     return create_char(font_tuple, random_char())
 
-def CharacterGenerator(batchsize, mean=None, std=None):
+def CharacterGenerator(batchsize, options={}):
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
             font_tuple = random.choice(font_array)
             char = random_char()
-            char_image = create_char(font_tuple, char)
+            char_image = create_char(font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
-
-            if mean == None:
-                mean = np.mean(char_data, axis=(0,1))
-                std = np.std(char_data, axis=(0,1))
-            char_data = (char_data - mean) / std / 255.0
+            mean = np.mean(char_data, axis=(0,1))
+            std = np.std(char_data, axis=(0,1))
+            char_data = (char_data - mean) / std
 
             x.append(char_data.reshape(char_height,char_width,1))
             y.append(random_char.char_array.index(char))
