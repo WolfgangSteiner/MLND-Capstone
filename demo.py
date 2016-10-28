@@ -1,5 +1,5 @@
 import cv2
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy as np
 from keras.models import load_model
 from time import sleep
@@ -18,7 +18,9 @@ def preprocess_image(image):
     clip_rect = (left, top, right, bottom)
 
     image = image.crop(clip_rect).resize((char_size, char_size), Image.LANCZOS)
-    image_data = np.array(image).astype('float32') / 255.0
+    image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
+
+    image_data = np.array(image).astype('float32')
     m = np.mean(image_data, axis=(0,1))
     s = np.std(image_data, axis=(0,1))
     image_data = (image_data - m) / s
