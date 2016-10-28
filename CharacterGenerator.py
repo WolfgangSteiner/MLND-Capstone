@@ -127,9 +127,10 @@ def add_random_lines(draw):
         draw_random_line(draw)
         n-=1
 
-def add_noise(image):
+def add_noise(image, options={}):
+    max_noise = options.get('max_noise', 8)
     w,h = image.size
-    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,8)
+    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,max_noise)
     im_array = np.array(image).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
@@ -203,7 +204,7 @@ def create_char(font_tuple, char, options={}):
     char_image = rotate(char_image, options)
     char_image = crop(char_image)
     char_image = blur(char_image, options)
-    char_image = add_noise(char_image)
+    char_image = add_noise(char_image, options)
     return char_image
 
 
@@ -241,12 +242,13 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
+    options={'max_noise':16}
 
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple = random.choice(font_array)
             char = random_char()
-            overview_image.paste(create_char(font_tuple, char), (char_width*i, char_height*j))
+            overview_image.paste(create_char(font_tuple, char, options), (char_width*i, char_height*j))
 
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
 
