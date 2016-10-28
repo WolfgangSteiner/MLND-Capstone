@@ -172,7 +172,6 @@ def normalize(char_image, factor):
     array = np.clip(array, 0.0, 255.0)
     return Image.fromarray(array).convert('L')
 
-
 def create_char(font_tuple, char, options={}):
     font = font_tuple[1]
     font_name = font_tuple[0]
@@ -213,6 +212,9 @@ def create_random_char():
     return create_char(font_tuple, random_char())
 
 def CharacterGenerator(batchsize, options={}):
+    mean = options.get('mean', None)
+    std = options.get('options', None)
+
     while True:
         x = []
         y = []
@@ -221,8 +223,13 @@ def CharacterGenerator(batchsize, options={}):
             char = random_char()
             char_image = create_char(font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
-            mean = np.mean(char_data, axis=(0,1))
-            std = np.std(char_data, axis=(0,1))
+
+            if mean == None:
+                mean = np.mean(char_data, axis=(0,1))
+
+            if std == None:
+                std = np.std(char_data, axis=(0,1))
+
             char_data = (char_data - mean) / std
 
             x.append(char_data.reshape(char_height,char_width,1))
