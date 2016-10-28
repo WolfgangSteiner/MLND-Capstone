@@ -50,7 +50,7 @@ def draw_probability(cv_img, p):
     cv2.putText(cv_img, "%.3f" % p, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
-model=load_model('checkpoint.hdf5')
+model=load_model('models/train014-svhn.hdf5')
 
 cap = cv2.VideoCapture(0)
 
