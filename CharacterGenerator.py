@@ -128,9 +128,10 @@ def add_random_lines(draw):
         n-=1
 
 def add_noise(image, options={}):
+    min_noise = options.get('min_noise', 8)
     max_noise = options.get('max_noise', 8)
     w,h = image.size
-    noise = (np.random.rand(w,h) - 0.5) * random.randint(0,max_noise)
+    noise = (np.random.rand(w,h) - 0.5) * (min_noise + random.randint(0,max_noise - min_noise))
     im_array = np.array(image).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
@@ -214,7 +215,7 @@ def create_random_char():
 
 def CharacterGenerator(batchsize, options={}):
     mean = options.get('mean', None)
-    std = options.get('options', None)
+    std = options.get('std', None)
 
     while True:
         x = []
