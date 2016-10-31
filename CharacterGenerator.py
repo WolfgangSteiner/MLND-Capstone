@@ -1,6 +1,6 @@
 #! /usr/bin/python2
 from __future__ import print_function
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
 import glob, os, os.path
 import pickle
@@ -63,8 +63,10 @@ def load_fonts_in_subdir(directory_path, font_array):
                     _,text_height = calc_text_size("0123456789", (font_file, font))
                     font_size += 1
 
-                font_array.append((font_file, font))
-                print("adding font: %s, size %d" % (font_file, font_size - 1))
+                max_font_size = font_size - 1
+
+                font_array.append((font_file, max_font_size))
+                print("adding font: %s, size %d" % (font_file, max_font_size))
             except IOError:
                 print("Error loading font: %s" % font_file)
 
@@ -88,8 +90,25 @@ def find_fonts():
 
     return font_array
 
-font_array = find_fonts()
-num_fonts = len(font_array)
+try:
+    print("Loading fonts from font_cache.pickle ...")
+    file = open('font_cache.pickle', 'rb')
+    font_array = pickle.load(file)
+except IOError:
+    font_array = find_fonts()
+    file = open('font_cache.pickle', 'wb')
+    print ("Writing font_cache.pickle ...")
+    pickle.dump(font_array, file, -1)
+
+def random_font(options={}):
+    min_size = options.get('min_size', 0.75)
+    max_size = options.get('max_size', 1.0)
+    font_name, max_font_size = random.choice(font_array)
+    size = random.randint(int(max_font_size * min_size), int(max_font_size * max_size))
+    return (font_name, ImageFont.truetype(font_name, size))
+
+def get_color(color, alpha=255):
+    return (color,color,color, alpha)
 
 def add_outline(draw, x, y, font, char, text_color):
     while True:
@@ -98,10 +117,26 @@ def add_outline(draw, x, y, font, char, text_color):
         if abs(text_color - outline_color) > 32:
             break
 
-    draw.text((x-1,y-1), char, font=font, fill=outline_color)
-    draw.text((x+1,y-1), char, font=font, fill=outline_color)
-    draw.text((x-1,y+1), char, font=font, fill=outline_color)
-    draw.text((x+1,y+1), char, font=font, fill=outline_color)
+    draw_text(draw, x-1, y-1, char, font, outline_color)
+    draw_text(draw, x+1, y-1, char, font, outline_color)
+    draw_text(draw, x-1, y+1, char, font, outline_color)
+    draw_text(draw, x+1, y+1, char, font, outline_color)
+
+
+def random_shadow_direction():
+    random.choice((1,-1, 0))
+
+def add_shadow(image, x, y, font, char, text_color):
+    shadow_image = Image.new('RGBA', image.size, (0,0,0,0))
+    shadow_layer = Image.new('RGBA', image.size, (0,0,0,255))
+    shadow_image = Image.composite(shadow_layer, shadow_image, image.split()[-1])
+    result = Image.new('RGBA', image.size, (0,0,0,0))
+    result.paste(shadow_image, (random.randint(-3,3), random.randint(-3,3)))
+
+    for n in (0, 10):
+        result = result.filter(ImageFilter.BLUR)
+
+    return result
 
 def displacement():
     return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
@@ -113,33 +148,41 @@ def random_background_color(text_color, min_color_delta=32):
         if abs(text_color - background_color) > min_color_delta:
             return background_color
 
+
+def draw_line(draw, p1, p2, color, width, alpha=255):
+    draw.line((p1[0],p1[1],p2[0],p2[1]), fill=get_color(color, alpha=alpha), width=width)
+
+def draw_text(draw, x, y, text, font, color):
+    draw.text((x,y), text, font=font, fill=get_color(color))
+
 def draw_random_line(draw, text_color, min_color_delta):
     p1 = np.random.random(2) * char_width
     angle = random.random() * math.pi
     length = random.random() * char_width
-    width = random.randint(1, char_width/2)
+    width = random.randint(1, char_width)
     color = random_background_color(text_color, min_color_delta=min_color_delta)
+    alpha = random.randint(64,255)
     p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
-    draw.line((p1[0],p1[1],p2[0],p2[1]), fill=color, width=width)
+    draw_line(draw, p1, p2, color, width, alpha=32)
 
 def add_random_lines(draw, text_color, min_color_delta):
-    n = random.randint(0,20)
-    while n>0:
+    while True:
         draw_random_line(draw, text_color, min_color_delta)
-        n-=1
+        if random.random() > 0.98:
+            break
 
 def add_noise(image, options={}):
     min_noise = options.get('min_noise', 8)
     max_noise = options.get('max_noise', 8)
     w,h = image.size
     noise = (np.random.rand(w,h) - 0.5) * (min_noise + random.randint(0,max_noise - min_noise))
-    im_array = np.array(image).astype(np.float32)
+    im_array = np.array(image.convert('L')).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
 
 def create_char_background(text_color, background_color, min_color_delta):
-    char_image = Image.new('L', (canvas_width, canvas_height), background_color)
-    draw = ImageDraw.Draw(char_image)
+    char_image = Image.new('RGBA', (canvas_width, canvas_height), get_color(background_color))
+    draw = ImageDraw.Draw(char_image, 'RGBA')
     add_random_lines(draw, text_color, min_color_delta)
     return char_image
 
@@ -150,9 +193,9 @@ random_char.char_array = list("0123456789")
 
 def perspective_transform(char_image):
     (w,h) = char_image.size
-    bounding_box = np.array([0,0,0,h,w,h,w,0]) * 2 + (2 * np.random.rand(8) - 1) * w / 4
+    bounding_box = np.array([0,0,0,h,w,h,w,0]) + (np.random.rand(8) - 0.5) * w / 4
     transformation = ImageTransform.QuadTransform(bounding_box)
-    return char_image.transform((w * 2, h * 2), transformation, resample=Image.BICUBIC)
+    return char_image.transform((w, h), transformation, resample=Image.BICUBIC)
 
 def rotate(char_image, options={}):
     max_rotation=options.get('max_rotation', 5)
@@ -183,8 +226,9 @@ def create_char(font_tuple, char, options={}):
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char
 
-    char_image = create_char_background(text_color, background_color, min_color_delta)
-    draw = ImageDraw.Draw(char_image)
+    image = create_char_background(text_color, background_color, min_color_delta)
+    return image
+    char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = calc_text_size(text, font_tuple)
     x = 0.5 * (canvas_width - w)
@@ -198,23 +242,34 @@ def create_char(font_tuple, char, options={}):
     if random.random() > 0.5:
         text = text + random_char()
 
+    x += (random.random() - 0.5) * 0.5 * (char_width - w)
+    y += (random.random() - 0.5) * (char_height - h)
+    y -= font.getoffset(text)[1]
+
+    draw = ImageDraw.Draw(char_image)
+
     if random.random() > 0.5:
         add_outline(draw, x, y, font, text, text_color)
 
-    y -= font.getoffset(text)[1]
-    draw.text((x,y), text, font=font, fill=text_color)
+    draw_text(draw, x, y, text, font, text_color)
 
-    #char_image = perspective_transform(char_image)
+    if random.random() > 0.5:
+        shadow_image = add_shadow(char_image, x, y, font, text, text_color)
+        image = Image.alpha_composite(image, shadow_image)
+
+    char_image = Image.alpha_composite(image, char_image)
     char_image = rotate(char_image, options)
+    char_image = perspective_transform(char_image)
     char_image = crop(char_image)
     char_image = blur(char_image, options)
     char_image = add_noise(char_image, options)
     return char_image
 
 
-def create_random_char():
-    font_tuple = random.choice(font_array)
+def create_random_char(options={}):
+    font_tuple = random_font(options)
     return create_char(font_tuple, random_char())
+
 
 def CharacterGenerator(batchsize, options={}):
     mean = options.get('mean', None)
@@ -224,8 +279,7 @@ def CharacterGenerator(batchsize, options={}):
         x = []
         y = []
         for i in range(0,batchsize):
-            font_tuple = random.choice(font_array)
-            char = random_char()
+            font_tuple = random_font(options)
             char_image = create_char(font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
 
@@ -246,10 +300,10 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.0, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
-            font_tuple = random.choice(font_array)
+            font_tuple=random_font(options)
             char = random_char()
             overview_image.paste(create_char(font_tuple, char, options), (char_width*i, char_height*j))
 
