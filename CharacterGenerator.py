@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import re
 import math
+import cairo
 from keras.utils.np_utils import to_categorical
 
 font_blacklist = (
@@ -108,7 +109,7 @@ def random_font(options={}):
     return (font_name, ImageFont.truetype(font_name, size))
 
 def get_color(color, alpha=255):
-    return (color,color,color, alpha)
+    return (color,color,color,alpha)
 
 def add_outline(draw, x, y, font, char, text_color):
     while True:
@@ -122,9 +123,6 @@ def add_outline(draw, x, y, font, char, text_color):
     draw_text(draw, x-1, y+1, char, font, outline_color)
     draw_text(draw, x+1, y+1, char, font, outline_color)
 
-
-def random_shadow_direction():
-    random.choice((1,-1, 0))
 
 def add_shadow(image, x, y, font, char, text_color):
     shadow_image = Image.new('RGBA', image.size, (0,0,0,0))
@@ -155,20 +153,20 @@ def draw_line(draw, p1, p2, color, width, alpha=255):
 def draw_text(draw, x, y, text, font, color):
     draw.text((x,y), text, font=font, fill=get_color(color))
 
-def draw_random_line(draw, text_color, min_color_delta):
-    p1 = np.random.random(2) * char_width
+def draw_random_line(draw, text_color, min_color_delta, oversampling=4):
+    p1 = np.random.random(2) * char_width * oversampling
     angle = random.random() * math.pi
-    length = random.random() * char_width
-    width = random.randint(1, char_width)
+    length = random.random() * char_width * oversampling
+    width = random.randint(1, char_width * oversampling)
     color = random_background_color(text_color, min_color_delta=min_color_delta)
     alpha = random.randint(64,255)
     p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
-    draw_line(draw, p1, p2, color, width, alpha=32)
+    draw_line(draw, p1, p2, color, width, alpha=255)
 
-def add_random_lines(draw, text_color, min_color_delta):
+def add_random_lines(draw, text_color, min_color_delta, oversampling=4):
     while True:
-        draw_random_line(draw, text_color, min_color_delta)
-        if random.random() > 0.98:
+        draw_random_line(draw, text_color, min_color_delta, oversampling=oversampling)
+        if random.random() > 0.96:
             break
 
 def add_noise(image, options={}):
@@ -181,10 +179,13 @@ def add_noise(image, options={}):
     return Image.fromarray(im_array).convert('L')
 
 def create_char_background(text_color, background_color, min_color_delta):
-    char_image = Image.new('RGBA', (canvas_width, canvas_height), get_color(background_color))
-    draw = ImageDraw.Draw(char_image, 'RGBA')
-    add_random_lines(draw, text_color, min_color_delta)
-    return char_image
+    oversampling = 2
+    image = Image.new('RGBA', (canvas_width * oversampling, canvas_height * oversampling), get_color(background_color))
+    draw = ImageDraw.Draw(image, 'RGBA')
+    add_random_lines(draw, text_color, min_color_delta, oversampling)
+    image = image.resize((canvas_width, canvas_height), resample=Image.LANCZOS)
+    image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
+    return image
 
 def random_char():
     return random.choice(random_char.char_array)
@@ -227,7 +228,6 @@ def create_char(font_tuple, char, options={}):
     text = char
 
     image = create_char_background(text_color, background_color, min_color_delta)
-    return image
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = calc_text_size(text, font_tuple)
