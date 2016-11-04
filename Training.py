@@ -216,16 +216,30 @@ class Training(object):
 
     def train_generator(self, options={}):
         self.compile()
-        X_val, y_val = CharacterGenerator(2048, self.generator_options).next()
+        X_val, y_val = CharacterGenerator(2048, options).next()
         generator = CharacterGenerator(self.batch_size, self.generator_options)
         num_epochs = options.get('num_epochs', 350)
-        
-        self.model.fit_generator(
-            generator, 16384, num_epochs,
-            validation_data = (X_val, y_val),
-            nb_val_samples = None,
-            callbacks = self.callbacks(options),
-            max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+        num_training = options.get('num_training', None)
+
+        if num_training is None:
+            self.model.fit_generator(
+                generator, 16384, num_epochs,
+                validation_data = (X_val, y_val),
+                nb_val_samples = None,
+                callbacks = self.callbacks(options),
+                max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+        else:
+            X_train, y_train = CharacterGenerator(num_training, options).next()
+            self.model.fit(
+                batch_size=self.batch_size,
+                nb_epoch=num_epochs,
+                verbose=1,
+                callbacks = self.callbacks(options),
+                validation_split=0.0,
+                validation_data=(X_val,y_val),
+                shuffle=True,
+                class_weight=None,
+                sample_weight=None)
 
     def train_svhn(self, options={}):
         self.compile()
