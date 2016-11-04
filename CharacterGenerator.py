@@ -280,6 +280,7 @@ def CharacterGenerator(batchsize, options={}):
         y = []
         for i in range(0,batchsize):
             font_tuple = random_font(options)
+            char = random_char()
             char_image = create_char(font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
 
