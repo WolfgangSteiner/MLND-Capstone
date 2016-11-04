@@ -218,9 +218,10 @@ class Training(object):
         self.compile()
         X_val, y_val = CharacterGenerator(2048, self.generator_options).next()
         generator = CharacterGenerator(self.batch_size, self.generator_options)
-
+        num_epochs = options.get('num_epochs', 350)
+        
         self.model.fit_generator(
-            generator, 16384, 1000,
+            generator, 16384, num_epochs,
             validation_data = (X_val, y_val),
             nb_val_samples = None,
             callbacks = self.callbacks(options),
