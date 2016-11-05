@@ -199,8 +199,8 @@ def perspective_transform(char_image):
     return char_image.transform((w, h), transformation, resample=Image.BICUBIC)
 
 def rotate(char_image, options={}):
-    max_rotation=options.get('max_rotation', 5)
-    angle = random.randrange(-max_rotation,max_rotation)
+    max_rotation=options.get('max_rotation', 5.0)
+    angle = np.random.normal(0.0, max_rotation)
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
 
 def blur(char_image, options={}):
@@ -301,7 +301,7 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.0, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':15.0, 'min_noise':4, 'max_noise':4}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
