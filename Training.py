@@ -39,6 +39,14 @@ def create_inception(depth, input_shape):
     return Model(input, output)
 
 
+def create_sconv(depth, filter_size, input_shape):
+    input = Input(shape=input_shape)
+    tower1 = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
+    tower1 = Activation('relu')(tower1)
+    output = merge([input, tower1], mode='concat')
+    return Model(input, output)
+
+
 def convnet(d1,d2,d3, input_shape):
     model = Sequential()
 
@@ -175,6 +183,12 @@ class Training(object):
         self.model.add(Activation('relu'))
         self.current_shape[2] = depth
 
+
+    def sconv(self, depth, filter_size=3):
+        sconv_layer = create_sconv(depth, filter_size, input_shape=self.current_shape)
+        self.is_first_layer = False
+        self.model.add(sconv_layer)
+        self.current_shape[2] += depth
     def inception(self, depth):
         self.is_first_layer = False
         self.model.add(create_inception(depth, self.input_shape))
