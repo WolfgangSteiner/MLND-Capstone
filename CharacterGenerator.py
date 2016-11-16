@@ -182,13 +182,20 @@ def add_noise(image, options={}):
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
 
-def create_char_background(text_color, background_color, min_color_delta):
-    oversampling = 2
-    image = Image.new('RGBA', (canvas_width * oversampling, canvas_height * oversampling), get_color(background_color))
-    draw = ImageDraw.Draw(image, 'RGBA')
-    add_random_lines(draw, text_color, min_color_delta, oversampling)
-    image = image.resize((canvas_width, canvas_height), resample=Image.LANCZOS)
-    image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
+
+def create_char_background(text_color, background_color, min_color_delta, options={}):
+    add_background_lines = options.get('add_background_lines', True)
+    oversampling = options.get('oversampling', 2)
+    
+    if add_background_lines:
+        image = Image.new('RGBA', (canvas_width * oversampling, canvas_height * oversampling), get_color(background_color))
+        draw = ImageDraw.Draw(image, 'RGBA')
+        add_random_lines(draw, text_color, min_color_delta, oversampling)
+        image = image.resize((canvas_width, canvas_height), resample=Image.LANCZOS)
+        image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
+    else:
+        image = Image.new('RGBA', (canvas_width, canvas_height), get_color(background_color))
+
     return image
 
 
@@ -239,7 +246,7 @@ def create_char(font_tuple, char, options={}):
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char
 
-    image = create_char_background(text_color, background_color, min_color_delta)
+    image = create_char_background(text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = calc_text_size(text, font_tuple)
