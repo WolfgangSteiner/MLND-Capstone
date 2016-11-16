@@ -150,9 +150,11 @@ def random_background_color(text_color, min_color_delta=32):
 def draw_line(draw, p1, p2, color, width, alpha=255):
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=get_color(color, alpha=alpha), width=width)
 
+    
 def draw_text(draw, x, y, text, font, color):
     draw.text((x,y), text, font=font, fill=get_color(color))
 
+    
 def draw_random_line(draw, text_color, min_color_delta, oversampling=4):
     p1 = np.random.random(2) * char_width * oversampling
     angle = random.random() * math.pi
@@ -163,12 +165,14 @@ def draw_random_line(draw, text_color, min_color_delta, oversampling=4):
     p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
     draw_line(draw, p1, p2, color, width, alpha=255)
 
+    
 def add_random_lines(draw, text_color, min_color_delta, oversampling=4):
     while True:
         draw_random_line(draw, text_color, min_color_delta, oversampling=oversampling)
         if random.random() > 0.96:
             break
 
+        
 def add_noise(image, options={}):
     min_noise = options.get('min_noise', 8)
     max_noise = options.get('max_noise', 8)
@@ -187,10 +191,13 @@ def create_char_background(text_color, background_color, min_color_delta):
     image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
     return image
 
+
 def random_char():
     return random.choice(random_char.char_array)
 
+
 random_char.char_array = list("0123456789")
+
 
 def perspective_transform(char_image):
     (w,h) = char_image.size
@@ -198,19 +205,23 @@ def perspective_transform(char_image):
     transformation = ImageTransform.QuadTransform(bounding_box)
     return char_image.transform((w, h), transformation, resample=Image.BICUBIC)
 
+
 def rotate(char_image, options={}):
     max_rotation=options.get('max_rotation', 5.0)
     angle = np.random.normal(0.0, max_rotation)
     return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+
 
 def blur(char_image, options={}):
     min_blur = options.get("min_blur", 1.0)
     max_blur = options.get('max_blur', 2.0)
     return char_image.filter(ImageFilter.GaussianBlur(radius=(min_blur + (max_blur - min_blur) * random.random())))
 
+
 def crop(char_image):
     (w,h) = char_image.size
     return char_image.crop((w/4, h/4, w * 3 / 4, h * 3 / 4))
+
 
 def normalize(char_image, factor):
     array = np.array(char_image).astype(np.float32)
@@ -218,6 +229,7 @@ def normalize(char_image, factor):
     s = np.std(array)
     array = np.clip(array, 0.0, 255.0)
     return Image.fromarray(array).convert('L')
+
 
 def create_char(font_tuple, char, options={}):
     font = font_tuple[1]
