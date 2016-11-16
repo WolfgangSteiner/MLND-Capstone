@@ -215,8 +215,12 @@ def perspective_transform(char_image):
 
 def rotate(char_image, options={}):
     max_rotation=options.get('max_rotation', 5.0)
-    angle = np.random.normal(0.0, max_rotation)
-    return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+
+    if max_rotation > 0:
+        angle = np.random.normal(0.0, max_rotation)
+        return char_image.rotate(angle, resample=Image.BICUBIC, expand = 0)
+    else:
+        return char_image
 
 
 def blur(char_image, options={}):
