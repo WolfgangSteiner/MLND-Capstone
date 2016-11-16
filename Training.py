@@ -3,6 +3,7 @@ from keras.layers import Input, merge
 from keras.layers import Dense, Dropout, Convolution2D, Flatten, Reshape, Activation
 from keras.layers import MaxPooling2D, AveragePooling2D
 from keras.models import Model, Sequential
+from keras.models import load_model
 from keras.optimizers import SGD, Adagrad
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
@@ -11,6 +12,7 @@ from keras.regularizers import l2, activity_l2
 from keras.callbacks import TensorBoard, CSVLogger
 from Common import load_svhn
 import numpy as np
+import pandas as pd
 import random
 from keras.layers.core import SpatialDropout2D
 from sys import argv
@@ -231,11 +233,25 @@ class Training(object):
         self.model.add(Dropout(p))
 
     def train_generator(self, options={}):
-        self.compile()
-        X_val, y_val = CharacterGenerator(2048, options).next()
-        generator = CharacterGenerator(self.batch_size, self.generator_options)
-        num_epochs = options.get('num_epochs', 350)
+        epoch_offset = 0
+
+        if "--continue" in argv:
+            print("Continuing training...")
+            file_stem = argv[0].split(".")[0]
+            self.model = load_model(file_stem + ".hdf5")
+            res = pd.read_csv(file_stem + ".log")
+            num_trained_epochs = len(res)
+            last_lr = res['lr'][num_trained_epochs - 1]
+            self.csv_logger.append = True
+            epoch_offset = num_trained_epochs
+        else:
+            self.compile()
+
+        num_epochs = options.get('num_epochs', 1000)
         num_training = options.get('num_training', None)
+        num_validation = options.get('num_validation', 2048)
+        X_val, y_val = CharacterGenerator(num_validation, options).next()
+        generator = CharacterGenerator(self.batch_size, options)
 
         if num_training is None:
             self.model.fit_generator(
