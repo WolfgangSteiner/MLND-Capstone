@@ -231,6 +231,7 @@ class Training(object):
         else:
             X_train, y_train = CharacterGenerator(num_training, options).next()
             self.model.fit(
+                X_train, y_train,
                 batch_size=self.batch_size,
                 nb_epoch=num_epochs,
                 verbose=1,
