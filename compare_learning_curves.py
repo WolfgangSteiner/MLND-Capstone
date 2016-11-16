@@ -37,13 +37,13 @@ while True:
         data.append(pd.read_csv(f+".log"))
 
     for i in range(0,len(names)):
-        ax[0].plot(data[i]['epoch'], data[i]['acc'], label= names[i] + " (tr)")
-        ax[0].plot(data[i]['epoch'], data[i]['val_acc'], label=names[i] + " (val)")
-        ax[1].plot(data[i]['epoch'], data[i]['loss'], label= names[i] + " (tr)")
-        ax[1].plot(data[i]['epoch'], data[i]['val_loss'], label=names[i] + " (val)")
+        ax[0].plot(data[i]['acc'], label= names[i] + " (tr)")
+        ax[0].plot(data[i]['val_acc'], label=names[i] + " (val)")
+        ax[1].plot(data[i]['loss'], label= names[i] + " (tr)")
+        ax[1].plot(data[i]['val_loss'], label=names[i] + " (val)")
 
         if show_lr():
-            ax[2].plot(data[i]['epoch'], data[i]['lr'])
+            ax[2].plot(data[i]['lr'])
             ax[2].set_yscale('log')
             
 
