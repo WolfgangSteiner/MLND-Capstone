@@ -126,10 +126,11 @@ def prepare_svhn(options={}):
 
 
 class Training(object):
-    def __init__(self, batch_size=32, input_shape=(32,32,1), mean=None, std=None):
+    def __init__(self, batch_size=32, input_shape=[32,32,1], mean=None, std=None):
         self.model = Sequential()
         self.batch_size = batch_size
         self.input_shape=input_shape
+        self.current_shape = input_shape
         self.mean = mean
         self.std = std
         self.is_first_layer = True
@@ -166,16 +167,13 @@ class Training(object):
             metrics=['accuracy'])
 
     def conv(self, depth, filter_size=3):
-        if self.is_first_layer:
-            conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg), input_shape=self.input_shape)
-            self.is_first_layer = False
-        else:
-            conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg))
-
+        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg), input_shape=self.current_shape)
+        self.is_first_layer = False
         self.model.add(conv_layer)
         if self.use_batchnorm:
             self.model.add(BatchNormalization())
         self.model.add(Activation('relu'))
+        self.current_shape[2] = depth
 
     def inception(self, depth):
         self.is_first_layer = False
@@ -206,9 +204,13 @@ class Training(object):
 
     def maxpool(self):
         self.model.add(MaxPooling2D())
+        self.current_shape[0] /= 2
+        self.current_shape[1] /= 2
 
     def avgpool(self):
         self.model.add(AveragePooling2D())
+        self.current_shape[0] /= 2
+        self.current_shape[1] /= 2
 
 
     def dropout(self, p):
