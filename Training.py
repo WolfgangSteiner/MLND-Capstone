@@ -154,7 +154,7 @@ class Training(object):
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
         self.csv_logger = CSVLogger(self.output_file_stem + ".log")
-        
+
 
     def callbacks(self, options):
         result = []
@@ -170,14 +170,14 @@ class Training(object):
                 result.append(c)
         return result
 
-    
+
     def compile(self):
         self.model.compile(
             optimizer=self.optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'])
 
-        
+
     def conv(self, depth, filter_size=3):
         conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg), input_shape=self.current_shape)
         self.is_first_layer = False
@@ -193,11 +193,12 @@ class Training(object):
         self.is_first_layer = False
         self.model.add(sconv_layer)
         self.current_shape[2] += depth
-        
+
 
     def inception(self, depth):
         self.is_first_layer = False
         self.model.add(create_inception(depth, self.input_shape))
+        self.current_shape[2] = 4 * depth
 
 
     def dense(self, output_size):
@@ -228,17 +229,17 @@ class Training(object):
         self.current_shape[0] /= 2
         self.current_shape[1] /= 2
 
-        
+
     def avgpool(self):
         self.model.add(AveragePooling2D())
         self.current_shape[0] /= 2
         self.current_shape[1] /= 2
 
-        
+
     def dropout(self, p):
         self.model.add(Dropout(p))
 
-        
+
     def train_generator(self, options={}):
         epoch_offset = 0
 
