@@ -1,4 +1,5 @@
 from CharacterGenerator import CharacterGenerator
+from CharacterSegmentationGenerator import CharacterSegmentationGenerator
 from keras.layers import Input, merge
 from keras.layers import Dense, Dropout, Convolution2D, Flatten, Reshape, Activation
 from keras.layers import MaxPooling2D, AveragePooling2D
@@ -171,10 +172,10 @@ class Training(object):
         return result
 
 
-    def compile(self):
+    def compile(self, loss_function='catergorical_crossentropy'):
         self.model.compile(
             optimizer=self.optimizer,
-            loss='categorical_crossentropy',
+            loss=loss_function,
             metrics=['accuracy'])
 
 
@@ -222,6 +223,11 @@ class Training(object):
     def classifier(self, num_classes=10):
         self.model.add(Dense(num_classes, init=self.winit))
         self.model.add(Activation('softmax'))
+
+
+    def binary_classifier(self):
+        self.model.add(Dense(1, init=self.winit))
+        self.model.add(Activation('sigmoid'))
 
 
     def maxpool(self):
@@ -281,6 +287,48 @@ class Training(object):
                 shuffle=True,
                 class_weight=None,
                 sample_weight=None)
+
+
+    def train_segmentation_generator(self, options={}):
+        if "--continue" in argv:
+            print("Continuing training...")
+            file_stem = argv[0].split(".")[0]
+            self.model = load_model(file_stem + ".hdf5")
+            res = pd.read_csv(file_stem + ".log")
+            num_trained_epochs = len(res)
+            last_lr = res['lr'][num_trained_epochs - 1]
+            self.csv_logger.append = True
+            epoch_offset = num_trained_epochs
+        else:
+            self.compile(loss_function='binary_crossentropy')
+
+        num_epochs = options.get('num_epochs', 1000)
+        num_training = options.get('num_training', None)
+        num_validation = options.get('num_validation', 2048)
+        X_val, y_val = CharacterSegmentationGenerator(num_validation, options).next()
+        generator = CharacterSegmentationGenerator(self.batch_size, options)
+
+        if num_training is None:
+            self.model.fit_generator(
+                generator, 16384, num_epochs,
+                validation_data = (X_val, y_val),
+                nb_val_samples = None,
+                callbacks = self.callbacks(options),
+                max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+        else:
+            X_train, y_train = CharacterSegmentationGenerator(num_training, options).next()
+            self.model.fit(
+                X_train, y_train,
+                batch_size=self.batch_size,
+                nb_epoch=num_epochs,
+                verbose=1,
+                callbacks = self.callbacks(options),
+                validation_split=0.0,
+                validation_data=(X_val,y_val),
+                shuffle=True,
+                class_weight=None,
+                sample_weight=None)
+
 
     def train_svhn(self, options={}):
         self.compile()

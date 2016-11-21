@@ -3,6 +3,7 @@ from CharacterGenerator import random_background_color, random_char, calc_text_s
 from CharacterGenerator import add_outline, add_shadow
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
+import numpy as np
 
 image_width = 16
 image_height = 32
@@ -71,7 +72,7 @@ def CharacterSegmentationGenerator(batchsize, options={}):
         y = []
         for i in range(0,batchsize):
             font_tuple = random_font(options)
-            is_char_border = random.random(0.5) > 0.5
+            is_char_border = int(random.random() > 0.5)
             image = create_segmentation_example(font_tuple, is_char_border, options)
             image_data = np.array(image).astype('float32')
 
@@ -83,10 +84,10 @@ def CharacterSegmentationGenerator(batchsize, options={}):
 
             image_data = (image_data - mean) / std
 
-            x.append(image_data.reshape(image_height,image_width / 2,1))
-            y.append(random_char.char_array.index(char))
+            x.append(image_data.reshape(image_height,image_width,1))
+            y.append(is_char_border)
 
-        yield np.array(x),to_categorical(y,len(random_char.char_array))
+        yield np.array(x),y
 
 
 if __name__ == "__main__":
