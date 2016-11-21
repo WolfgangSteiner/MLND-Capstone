@@ -136,7 +136,7 @@ def add_shadow(image, x, y, font, char, text_color):
 
     return result
 
-def displacement():
+def displacement(char_width, char_height):
     return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
 
 def random_background_color(text_color, min_color_delta=32):
@@ -150,51 +150,49 @@ def random_background_color(text_color, min_color_delta=32):
 def draw_line(draw, p1, p2, color, width, alpha=255):
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=get_color(color, alpha=alpha), width=width)
 
-    
+
 def draw_text(draw, x, y, text, font, color):
     draw.text((x,y), text, font=font, fill=get_color(color))
 
-    
-def draw_random_line(draw, text_color, min_color_delta, oversampling=4):
-    p1 = np.random.random(2) * char_width * oversampling
+
+def draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=4):
+    p1 = np.random.random(2) * canvas_width / 2 * oversampling
     angle = random.random() * math.pi
-    length = random.random() * char_width * oversampling
-    width = random.randint(1, char_width * oversampling)
+    length = random.random() * canvas_width / 2 * oversampling
+    width = random.randint(1, canvas_width / 2 * oversampling)
     color = random_background_color(text_color, min_color_delta=min_color_delta)
     alpha = random.randint(64,255)
     p2 = p1 + np.array([math.cos(angle), math.sin(angle)]) * length
     draw_line(draw, p1, p2, color, width, alpha=255)
 
-    
-def add_random_lines(draw, text_color, min_color_delta, oversampling=4):
-    while True:
-        draw_random_line(draw, text_color, min_color_delta, oversampling=oversampling)
-        if random.random() > 0.96:
-            break
 
-        
+def add_random_lines(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=4):
+    while random.random() < 0.95:
+        draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=oversampling)
+
+
 def add_noise(image, options={}):
     min_noise = options.get('min_noise', 8)
     max_noise = options.get('max_noise', 8)
     w,h = image.size
-    noise = (np.random.rand(w,h) - 0.5) * (min_noise + random.randint(0,max_noise - min_noise))
+    noise = (np.random.rand(h,w) - 0.5) * (min_noise + random.randint(0,max_noise - min_noise))
     im_array = np.array(image.convert('L')).astype(np.float32)
     im_array = np.clip(im_array + noise, 0.0, 255.0)
     return Image.fromarray(im_array).convert('L')
 
 
-def create_char_background(text_color, background_color, min_color_delta, options={}):
+def create_char_background(width, height, text_color, background_color, min_color_delta, options={}):
     add_background_lines = options.get('add_background_lines', True)
     oversampling = options.get('oversampling', 2)
-    
+
     if add_background_lines:
-        image = Image.new('RGBA', (canvas_width * oversampling, canvas_height * oversampling), get_color(background_color))
+        image = Image.new('RGBA', (width * oversampling, height * oversampling), get_color(background_color))
         draw = ImageDraw.Draw(image, 'RGBA')
-        add_random_lines(draw, text_color, min_color_delta, oversampling)
-        image = image.resize((canvas_width, canvas_height), resample=Image.LANCZOS)
+        add_random_lines(width, height, draw, text_color, min_color_delta, oversampling)
+        image = image.resize((width, height), resample=Image.LANCZOS)
         image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
     else:
-        image = Image.new('RGBA', (canvas_width, canvas_height), get_color(background_color))
+        image = Image.new('RGBA', (width, height), get_color(background_color))
 
     return image
 
@@ -242,7 +240,9 @@ def normalize(char_image, factor):
     return Image.fromarray(array).convert('L')
 
 
-def create_char(font_tuple, char, options={}):
+def create_char(char_width, char_height, font_tuple, char, options={}):
+    canvas_width = char_width * 2
+    canvas_height = char_height * 2
     font = font_tuple[1]
     font_name = font_tuple[0]
     min_color_delta = options.get('min_color_delta', 32)
@@ -250,7 +250,7 @@ def create_char(font_tuple, char, options={}):
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char
 
-    image = create_char_background(text_color, background_color, min_color_delta, options=options)
+    image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = calc_text_size(text, font_tuple)
@@ -291,7 +291,7 @@ def create_char(font_tuple, char, options={}):
 
 def create_random_char(options={}):
     font_tuple = random_font(options)
-    return create_char(font_tuple, random_char())
+    return create_char(char_width, char_height, font_tuple, random_char())
 
 
 def CharacterGenerator(batchsize, options={}):
@@ -304,7 +304,7 @@ def CharacterGenerator(batchsize, options={}):
         for i in range(0,batchsize):
             font_tuple = random_font(options)
             char = random_char()
-            char_image = create_char(font_tuple, char, options)
+            char_image = create_char(char_width, char_height, font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
 
             if mean == None:
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
             char = random_char()
-            overview_image.paste(create_char(font_tuple, char, options), (char_width*i, char_height*j))
+            overview_image.paste(create_char(char_width, char_height, font_tuple, char, options), (char_width*i, char_height*j))
 
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
 
