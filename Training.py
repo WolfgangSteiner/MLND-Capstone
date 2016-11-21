@@ -20,33 +20,50 @@ from sys import argv
 
 num_classes = 10 #+ 26*2
 
-def create_inception(depth, input_shape):
+
+def regularizer(wreg):
+    if wreg > 0.0:
+        return l2(wreg)
+    else:
+        return None
+        
+
+def create_conv_layer(depth, filter_size, input, wreg=0.01):
+    t = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(wreg), init='glorot_normal')(input)
+    return Activation('relu')(t)
+
+    
+def create_inception_branch(depth, filter_size, input, wreg=0.01):
+    t = create_conv_layer(depth, 1, input, wreg)
+    t = create_conv_layer(depth, filter_size, t, wreg)
+    return t
+
+
+def create_inception(depth, input_shape, max_filter_size=5, wreg=0.01):
     input = Input(shape=input_shape)
-    tower1 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
-    tower1 = Activation('relu')(tower1)
-    tower1 = Convolution2D(depth, 3, 3, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(tower1)
-    tower1 = Activation('relu')(tower1)
+    branches = []
 
-    tower2 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
-    tower2 = Activation('relu')(tower2)
-    tower2 = Convolution2D(depth, 5, 5, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(tower2)
-    tower2 = Activation('relu')(tower2)
+    filter_size = 3
 
-    tower3 = MaxPooling2D((3, 3), strides=(1, 1), border_mode='same')(input)
-    tower3 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(tower3)
-    tower3 = Activation('relu')(tower3)
+    while filter_size <= max_filter_size:
+        branches.append(create_inception_branch(depth, filter_size, input, wreg=wreg))
+        filter_size += 2
+        
+    t = MaxPooling2D((3, 3), strides=(1, 1), border_mode='same')(input)
+    t = create_conv_layer(depth, 1, t, wreg=wreg)
+    branches.append(t)
+    
+    branches.append(create_conv_layer(depth, 1, input, wreg=wreg))
+    
+    output = merge(branches, mode='concat')
+    output_shape = [input_shape[0], input_shape[1], len(branches) * depth]
+    return Model(input, output), output_shape
 
-    tower4 = Convolution2D(depth, 1, 1, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
-    tower4 = Activation('relu')(tower4)
-    output = merge([tower1, tower2, tower3, tower4], mode='concat')
-    return Model(input, output)
 
-
-def create_sconv(depth, filter_size, input_shape):
+def create_sconv(depth, filter_size, input_shape, wreg=0.01):
     input = Input(shape=input_shape)
-    tower1 = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(0.01), init='glorot_normal')(input)
-    tower1 = Activation('relu')(tower1)
-    output = merge([input, tower1], mode='concat')
+    branches = [input, create_conv_layer(depth, filter_size, input, wreg)]
+    output = merge(branches, mode='concat')
     return Model(input, output)
 
 
@@ -76,6 +93,7 @@ def convnet(d1,d2,d3, input_shape):
 def are_elements_unique(a):
     u, i = np.unique(a, return_inverse=True)
     return len(u[np.bincount(i) > 1]) == 0
+
 
 def prepare_svhn(options={}):
     n_val = options.get('n_val', 600)
@@ -180,7 +198,7 @@ class Training(object):
 
 
     def conv(self, depth, filter_size=3):
-        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=l2(self.wreg), input_shape=self.current_shape)
+        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(self.wreg), input_shape=self.current_shape)
         self.is_first_layer = False
         self.model.add(conv_layer)
         if self.use_batchnorm:
@@ -190,16 +208,17 @@ class Training(object):
 
 
     def sconv(self, depth, filter_size=3):
-        sconv_layer = create_sconv(depth, filter_size, input_shape=self.current_shape)
+        sconv_layer = create_sconv(depth, filter_size, input_shape=self.current_shape, wreg=self.wreg)
         self.is_first_layer = False
         self.model.add(sconv_layer)
         self.current_shape[2] += depth
 
 
-    def inception(self, depth):
+    def inception(self, depth, max_filter_size=5):
         self.is_first_layer = False
-        self.model.add(create_inception(depth, self.input_shape))
-        self.current_shape[2] = 4 * depth
+        model, output_shape = create_inception(depth, self.current_shape, max_filter_size=max_filter_size, wreg=self.wreg)
+        self.model.add(model)
+        self.current_shape = output_shape
 
 
     def dense(self, output_size):
@@ -212,7 +231,7 @@ class Training(object):
             self.model.add(Flatten())
             self.is_first_dense_layer = False
 
-        self.model.add(Dense(256, init=self.winit, W_regularizer=l2(self.wreg)))
+        self.model.add(Dense(256, init=self.winit, W_regularizer=regularizer(self.wreg)))
 
         if self.use_batchnorm:
             self.model.add(BatchNormalization())
@@ -273,7 +292,7 @@ class Training(object):
                 validation_data = (X_val, y_val),
                 nb_val_samples = None,
                 callbacks = self.callbacks(options),
-                max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+                max_q_size=8, nb_worker=4, pickle_safe=True)  # starts training
         else:
             X_train, y_train = CharacterGenerator(num_training, options).next()
             self.model.fit(
