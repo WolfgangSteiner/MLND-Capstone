@@ -80,13 +80,15 @@ def create_segmentation_example(image_width, image_height, font_tuple, options={
 def CharacterSegmentationGenerator(batchsize, options={}):
     mean = options.get('mean', None)
     std = options.get('std', None)
+    image_width = 16
+    image_height = 32
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
             font_tuple = random_font(options)
             is_char_border = int(random.random() > 0.5)
-            image = create_segmentation_example(font_tuple, is_char_border, options)
+            image, label = create_segmentation_example(image_width, image_height, font_tuple, options)
             image_data = np.array(image).astype('float32')
 
             if mean == None:
@@ -98,7 +100,7 @@ def CharacterSegmentationGenerator(batchsize, options={}):
             image_data = (image_data - mean) / std
 
             x.append(image_data.reshape(image_height,image_width,1))
-            y.append(is_char_border)
+            y.append(label)
 
         yield np.array(x),y
 
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     image_height = 32
     overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':0.0, 'min_noise':4, 'max_noise':4}
+    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
