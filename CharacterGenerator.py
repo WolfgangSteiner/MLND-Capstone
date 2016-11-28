@@ -241,6 +241,7 @@ def normalize(char_image, factor):
 
 
 def create_char(char_width, char_height, font_tuple, char, options={}):
+    left_aligned = options.get('left_aligned', False)
     canvas_width = char_width * 2
     canvas_height = char_height * 2
     font = font_tuple[1]
@@ -254,7 +255,11 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = calc_text_size(text, font_tuple)
-    x = 0.5 * (canvas_width - w)
+    if left_aligned:
+        x = 0.5 * char_width + random.randint(-2,2)
+    else:
+        x = 0.5 * (canvas_width - w)
+
     y = 0.5 * (canvas_height - h)
 
     if random.random() > 0.5:
@@ -282,7 +287,8 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
     char_image = Image.alpha_composite(image, char_image)
     char_image = rotate(char_image, options)
-    char_image = perspective_transform(char_image)
+    if not left_aligned:
+        char_image = perspective_transform(char_image)
     char_image = crop(char_image)
     char_image = blur(char_image, options)
     char_image = add_noise(char_image, options)
@@ -324,7 +330,7 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':15.0, 'min_noise':4, 'max_noise':4}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'left_aligned':True}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
@@ -333,9 +339,9 @@ if __name__ == "__main__":
 
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
 
-            if debug:
-                print("%02d/%02d: %s" % (j,i, font_tuple[0]))
+            if True:
+#                print("%02d/%02d: %s" % (j,i, font_tuple[0]))
                 overview_draw.text((i * char_width, j * char_height + 10), char)
-                overview_draw.text((i * char_width, j * char_height + 38), "%02d/%02d" % (j,i))
+#                overview_draw.text((i * char_width, j * char_height + 38), "%02d/%02d" % (j,i))
 
     overview_image.save("overview.png")
