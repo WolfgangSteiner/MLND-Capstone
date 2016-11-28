@@ -12,6 +12,7 @@ debug = True
 def create_segmentation_example(image_width, image_height, font_tuple, options={}):
     canvas_width = image_width * 2
     canvas_height = image_height * 2
+    include_word_end_segmentation = options.get('include_word_end_segmentation', False)
     font = font_tuple[1]
     font_name = font_tuple[0]
     min_color_delta = options.get('min_color_delta', 32)
@@ -41,7 +42,7 @@ def create_segmentation_example(image_width, image_height, font_tuple, options={
 
     if is_word_end and label == True:
         x = 0.5 * canvas_width - w
-        label = False
+        label = include_word_end_segmentation
 
     y = 0.5 * (canvas_height - h)
 
@@ -78,8 +79,8 @@ def create_segmentation_example(image_width, image_height, font_tuple, options={
 
 
 def CharacterSegmentationGenerator(batchsize, options={}):
-    mean = options.get('mean', None)
-    std = options.get('std', None)
+#    mean = options.get('mean', None)
+#    std = options.get('std', None)
     image_width = 16
     image_height = 32
     while True:
@@ -91,13 +92,13 @@ def CharacterSegmentationGenerator(batchsize, options={}):
             image, label = create_segmentation_example(image_width, image_height, font_tuple, options)
             image_data = np.array(image).astype('float32')
 
-            if mean == None:
-                mean = np.mean(image_data, axis=(0,1))
-
-            if std == None:
-                std = np.std(image_data, axis=(0,1))
-
-            image_data = (image_data - mean) / std
+            # if mean == None:
+            #     mean = np.mean(image_data, axis=(0,1))
+            #
+            # if std == None:
+            #     std = np.std(image_data, axis=(0,1))
+            #
+            # image_data = (image_data - mean) / std
 
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
