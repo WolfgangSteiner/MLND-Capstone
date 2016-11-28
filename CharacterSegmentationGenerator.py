@@ -81,7 +81,7 @@ def create_segmentation_example(image_width, image_height, font_tuple, options={
 def CharacterSegmentationGenerator(batchsize, options={}):
 #    mean = options.get('mean', None)
 #    std = options.get('std', None)
-    image_width = 16
+    image_width = options.get('image_width', 16)
     image_height = 32
     while True:
         x = []
@@ -107,11 +107,11 @@ def CharacterSegmentationGenerator(batchsize, options={}):
 
 
 if __name__ == "__main__":
-    image_width = 16
+    image_width = 32
     image_height = 32
     overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
+    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'include_word_end_segmentation':True}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
