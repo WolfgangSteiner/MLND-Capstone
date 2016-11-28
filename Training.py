@@ -190,7 +190,7 @@ class Training(object):
         return result
 
 
-    def compile(self, loss_function='catergorical_crossentropy'):
+    def compile(self, loss_function='categorical_crossentropy'):
         self.model.compile(
             optimizer=self.optimizer,
             loss=loss_function,
