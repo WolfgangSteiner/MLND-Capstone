@@ -227,9 +227,21 @@ def blur(char_image, options={}):
     return char_image.filter(ImageFilter.GaussianBlur(radius=(min_blur + (max_blur - min_blur) * random.random())))
 
 
-def crop(char_image):
+def crop(char_image, char_width = None):
     (w,h) = char_image.size
-    return char_image.crop((w/4, h/4, w * 3 / 4, h * 3 / 4))
+    y1 = h / 4
+    y2 = h * 3 / 4
+
+    if char_width != None:
+        x1 = w / 2 - char_width / 2
+        x2 = w / 2 + char_width / 2
+        img = char_image.crop((x1, y1, x2, y2))
+        return img.resize((w/2,h/2), resample=Image.BICUBIC)
+
+    else:
+        x1 = w / 4
+        x2 = w * 3 / 4
+        return char_image.crop((x1, y1, x2, y2))
 
 
 def normalize(char_image, factor):
@@ -242,6 +254,7 @@ def normalize(char_image, factor):
 
 def create_char(char_width, char_height, font_tuple, char, options={}):
     left_aligned = options.get('left_aligned', False)
+    resize_char = options.get('resize_char', False)
     canvas_width = char_width * 2
     canvas_height = char_height * 2
     font = font_tuple[1]
@@ -287,9 +300,11 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
     char_image = Image.alpha_composite(image, char_image)
     char_image = rotate(char_image, options)
-    if not left_aligned:
+    if not left_aligned and not resize_char:
         char_image = perspective_transform(char_image)
-    char_image = crop(char_image)
+
+    crop_width = w if resize_char else None
+    char_image = crop(char_image, crop_width)
     char_image = blur(char_image, options)
     char_image = add_noise(char_image, options)
     return char_image
@@ -330,7 +345,7 @@ def CharacterGenerator(batchsize, options={}):
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'left_aligned':True}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'resize_char':True}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
