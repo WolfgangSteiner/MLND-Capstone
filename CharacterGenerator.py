@@ -227,21 +227,24 @@ def blur(char_image, options={}):
     return char_image.filter(ImageFilter.GaussianBlur(radius=(min_blur + (max_blur - min_blur) * random.random())))
 
 
-def crop(char_image, char_width = None):
+def crop(char_image, width=None, rescale=True):
     (w,h) = char_image.size
     y1 = h / 4
     y2 = h * 3 / 4
 
-    if char_width != None:
-        x1 = w / 2 - char_width / 2
-        x2 = w / 2 + char_width / 2
-        img = char_image.crop((x1, y1, x2, y2))
-        return img.resize((w/2,h/2), resample=Image.BICUBIC)
-
+    if width != None:
+        x1 = w / 2 - width / 2
+        x2 = w / 2 + width / 2
     else:
         x1 = w / 4
         x2 = w * 3 / 4
-        return char_image.crop((x1, y1, x2, y2))
+
+    img = char_image.crop((x1, y1, x2, y2))
+
+    if width != None and rescale:
+        img = img.resize((w/2,h/2), resample=Image.BICUBIC)
+
+    return img
 
 
 def normalize(char_image, factor):
