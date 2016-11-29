@@ -4,16 +4,19 @@ from CharacterGenerator import add_outline, add_shadow
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
 import numpy as np
+import uuid
+import argparse
+import sys, errno, os
+import pickle
 
-image_width = 128
-image_height = 32
-canvas_width = image_width * 2
-canvas_height = image_height * 2
 num_char_columns = 2
 num_char_rows = 32
 debug = True
 
-def create_char_sequence(font_tuple, options={}):
+def create_char_sequence(image_width = 128, image_height = 32, options={}):
+    canvas_width = image_width * 2
+    canvas_height = image_height * 2
+    font_tuple=random_font(options)
     font = font_tuple[1]
     font_name = font_tuple[0]
     min_color_delta = options.get('min_color_delta', 32)
@@ -32,9 +35,11 @@ def create_char_sequence(font_tuple, options={}):
     (w,h) = calc_text_size(text, font_tuple)
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
-    x += (random.random() - 0.5) * 0.5 * (image_width - w)
+    margin = random.random() * 16
+    x += (random.random() - 0.5) * 0.5 * margin
     y += (random.random() - 0.5) * (image_height - h)
     y -= font.getoffset(text)[1]
+
 
     draw = ImageDraw.Draw(char_image)
 
@@ -50,10 +55,10 @@ def create_char_sequence(font_tuple, options={}):
     char_image = Image.alpha_composite(image, char_image)
     char_image = rotate(char_image, options)
 #    char_image = perspective_transform(char_image)
-    char_image = crop(char_image)
+    char_image = crop(char_image, w + margin, rescale=False)
     char_image = blur(char_image, options)
     char_image = add_noise(char_image, options)
-    return char_image
+    return char_image, text
 
 
 # def CharacterSequenceGenerator(batchsize, options={}):
@@ -82,21 +87,47 @@ def create_char_sequence(font_tuple, options={}):
 #         yield np.array(x),y
 
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
 if __name__ == "__main__":
-    overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
-    overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':0.0, 'min_noise':4, 'max_noise':4}
-    for j in range(0,num_char_rows):
-        for i in range(0,num_char_columns):
-            font_tuple=random_font(options)
-            is_char_border = int(random.random() > 0.5)
-            overview_image.paste(create_char_sequence(font_tuple, options), (image_width*i, image_height*j))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
+    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
+    parser.add_argument("--save", help="save image as png along with a pickle of the labels", action="store_true")
+    args = parser.parse_args()
 
-            #overview_image.paste(Image.fromarray((batch[0][i].reshape(image_height,image_width) * 255).astype('uint8'),mode="L"), (image_width*i, image_height*j))
+    image_width = 256
+    image_height = 32
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
 
-            if debug:
-                print("%02d/%02d: %s" % (j,i, font_tuple[0]))
-                overview_draw.text((i * image_width, j * image_height + 20), str(is_char_border))
-#                overview_draw.text((i * image_width, j * image_height + 38), "%02d/%02d" % (j,i))
+    if args.save:
+        labels = {}
+        mkdir_p(args.data_dir)
+        for i in range(args.n):
+            sys.stdout.write("\r%d" % (i+1))
+            sys.stdout.flush()
+            id = str(uuid.uuid4())
+            char_image, label = create_char_sequence(image_width, image_height, options)
+            labels[id] = label
+            char_image.save(args.data_dir + "/" + id + ".png")
+        file = open(args.data_dir + '/' + 'labels.pickle', 'wb')
+        print
+        print ("Writing labels.pickle ...")
+        pickle.dump(labels, file, -1)
 
-    overview_image.save("overview.png")
+    else:
+        overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
+        overview_draw = ImageDraw.Draw(overview_image)
+        for j in range(0,num_char_rows):
+            for i in range(0,num_char_columns):
+                char_image, label = create_char_sequence(image_width, image_height, options)
+                overview_image.paste(char_image, (image_width*i, image_height*j))
+
+        overview_image.save("overview.png")
