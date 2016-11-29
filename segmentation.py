@@ -1,6 +1,6 @@
 from CharacterSequenceGenerator import create_char_sequence
 import numpy as np
-import pickle, sys
+import pickle, sys, argparse
 from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import cProfile
@@ -173,32 +173,37 @@ def draw_chars(img, seg_array):
     return result
 
 
-def test_segmentation():
+def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':0.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
     n = 0
     correct_predictions = 0
-    file = open('sequence_data/labels.pickle', 'rb')
+    file = open(data_dir + '/' + 'labels.pickle', 'rb')
     labels = pickle.load(file)
 
-    num_char_rows = len(labels) / 2 + len(labels) % 2
-    overview_image = Image.new("RGB", (image_width, 2 * image_height * num_char_rows), (0,0,0))
-    overview_draw = ImageDraw.Draw(overview_image)
+    if visualize:
+        num_examples = min(max_num, len(labels))
+        num_char_rows = num_examples / 2 + num_examples % 2
+        overview_image = Image.new("RGB", (image_width, 2 * image_height * num_char_rows), (0,0,0))
+        overview_draw = ImageDraw.Draw(overview_image)
 
 
     for id,text in labels.iteritems():
-        img = Image.open('sequence_data/' + id + ".png")
+        img = Image.open(data_dir + '/' + id + ".png")
         #img,text = create_char_sequence(image_width, image_height, options)
         seg_array, score_array = segment_characters(img)
         predicted_text = classify_characters(img, seg_array)
-        img = img.convert(mode='RGB')
-        char_image = draw_chars(img, seg_array)
-        draw_score(img, score_array)
-        draw_segmentation(img, seg_array)
-        draw_answer(img, text, predicted_text)
-        x = (n % 2) * image_width / 2
-        y = (n / 2) * image_height * 2
-        overview_image.paste(img, (x, y))
-        overview_image.paste(char_image, (x, y + image_height))
+
+        if visualize:
+            x = (n % 2) * image_width / 2
+            y = (n / 2) * image_height * 2
+            img = img.convert(mode='RGB')
+            char_image = draw_chars(img, seg_array)
+            draw_score(img, score_array)
+            draw_segmentation(img, seg_array)
+            draw_answer(img, text, predicted_text)
+            overview_image.paste(img, (x, y))
+            overview_image.paste(char_image, (x, y + image_height))
+
         if text == predicted_text:
             correct_predictions += 1
 
@@ -206,13 +211,24 @@ def test_segmentation():
         sys.stdout.write("\r%d/%d  acc: %f" % (correct_predictions, n, float(correct_predictions) / n))
         sys.stdout.flush()
 
+        if n >= max_num:
+            break
+
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(image_height,image_width) * 255).astype('uint8'),mode="L"), (image_width*i, image_height*j))
 
-    overview_image.save("overview.png")
+    if visualize:
+        overview_image.save("overview.png")
+
     print "Accuracy: %d/%d = %f" % (correct_predictions, n, float(correct_predictions) / n)
 
 
-test_segmentation()
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', help="max number of test cases", action="store", dest="n", type=int, default=1024*1024)
+parser.add_argument('--directory', help="directory of test cases", action='store', dest='data_dir', default='data')
+parser.add_argument("--visualize", help="save visualization of char segmentation and classification", action="store_true", default=False)
+args = parser.parse_args()
+
+test_segmentation(max_num=args.n, visualize=args.visualize, data_dir=args.data_dir)
 
 
 #pr.disable()
