@@ -1,0 +1,11 @@
+from Training import Training
+t = Training(input_shape=[32,32,1])
+t.conv(32,5)
+t.maxpool()
+t.conv(32,5)
+t.maxpool()
+t.dense(32)
+t.dense(32)
+t.dropout(0.5)
+t.binary_classifier()
+t.train_detection_generator(options={'max_blur':2.5, 'max_rotation':5})
