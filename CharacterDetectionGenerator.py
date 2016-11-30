@@ -43,22 +43,21 @@ def create_detection_example(image_width, image_height, options={}):
 
     y = 0.5 * (canvas_height - h)
 
-    if not is_word_start:
+    while not is_word_start and random.random() > 0.5:
         text = random_char() + text
         (w2,h2) = calc_text_size(text, font_tuple)
         x -= (w2 - w)
 
-    if not is_word_end:
+    while not is_word_end and random.random() > 0.5:
         text = text + random_char()
 
 #    x += random.randint(-2,2)
     y += (random.random() - 0.5) * image_height
+    y1 = y - 0.5 * image_height
+    y2 = y + h - 0.5 * image_height
     y -= font.getoffset(text)[1]
 
-    y1 = y
-    y2 = y + h
-
-    label = y1 > 0 and y1 < 0.125 * h and y2 > image_height * 0.875 and y2 < image_height
+    label = (y1 > 0) and (y1 < 0.25 * h) and (y2 > image_height * 0.75) and (y2 < image_height)
 
     draw = ImageDraw.Draw(char_image)
 
@@ -105,14 +104,10 @@ if __name__ == "__main__":
     options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'include_word_end_segmentation':True}
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
-            font_tuple=random_font(options)
-            image, label = create_detection_example(image_width, image_height, font_tuple, options)
+            image, label = create_detection_example(image_width, image_height, options)
             overview_image.paste(image, (image_width*i, image_height*j))
-
-            #overview_image.paste(Image.fromarray((batch[0][i].reshape(image_height,image_width) * 255).astype('uint8'),mode="L"), (image_width*i, image_height*j))
 
             if debug:
                 overview_draw.text((i * image_width, j * image_height + 20), str(label))
-#                overview_draw.text((i * image_width, j * image_height + 38), "%02d/%02d" % (j,i))
 
     overview_image.save("overview.png")
