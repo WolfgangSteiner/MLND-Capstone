@@ -10,7 +10,7 @@ num_char_rows = 32
 debug = True
 
 def create_detection_example(image_width, image_height, options={}):
-    font_tuple = random_font({'min_size':0.25, 'max_size':2.0})
+    font_tuple = random_font({'min_size':0.25, 'max_size':1.5})
     canvas_width = image_width * 2
     canvas_height = image_height * 2
     font = font_tuple[1]
@@ -52,7 +52,7 @@ def create_detection_example(image_width, image_height, options={}):
         text = text + random_char()
 
 #    x += random.randint(-2,2)
-    y += (random.random() - 0.5) * image_height
+    y += (random.random() - 0.5) * image_height * 0.25
     y1 = y - 0.5 * image_height
     y2 = y + h - 0.5 * image_height
     y -= font.getoffset(text)[1]
