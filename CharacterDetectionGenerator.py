@@ -9,7 +9,8 @@ num_char_columns = 32
 num_char_rows = 32
 debug = True
 
-def create_detection_example(image_width, image_height, font_tuple, options={}):
+def create_detection_example(image_width, image_height, options={}):
+    font_tuple = random_font({'min_size':0.25, 'max_size':2.0})
     canvas_width = image_width * 2
     canvas_height = image_height * 2
     font = font_tuple[1]
@@ -33,15 +34,12 @@ def create_detection_example(image_width, image_height, font_tuple, options={}):
 
     (w,h) = calc_text_size(text, font_tuple)
     if random.random() < 0.5:
-        label = True
         x = 0.5 * canvas_width
     else:
         x = 0.5 * (canvas_width - w)
-        label = True
 
     if is_word_end and label == True:
         x = 0.5 * canvas_width - w
-        label = True
 
     y = 0.5 * (canvas_height - h)
 
@@ -54,8 +52,13 @@ def create_detection_example(image_width, image_height, font_tuple, options={}):
         text = text + random_char()
 
 #    x += random.randint(-2,2)
-    y += (random.random() - 0.5) * (image_height - h)
+    y += (random.random() - 0.5) * image_height
     y -= font.getoffset(text)[1]
+
+    y1 = y
+    y2 = y + h
+
+    label = y1 > 0 and y1 < 0.125 * h and y2 > image_height * 0.875 and y2 < image_height
 
     draw = ImageDraw.Draw(char_image)
 
@@ -86,19 +89,8 @@ def CharacterDetectionGenerator(batchsize, options={}):
         x = []
         y = []
         for i in range(0,batchsize):
-            font_tuple = random_font(options)
-            is_char_border = int(random.random() > 0.5)
-            image, label = create_detection_example(image_width, image_height, font_tuple, options)
+            image, label = create_detection_example(image_width, image_height, options)
             image_data = np.array(image).astype('float32')
-
-            # if mean == None:
-            #     mean = np.mean(image_data, axis=(0,1))
-            #
-            # if std == None:
-            #     std = np.std(image_data, axis=(0,1))
-            #
-            # image_data = (image_data - mean) / std
-
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
 
