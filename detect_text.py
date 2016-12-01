@@ -9,7 +9,7 @@ from segmentation import predict_word
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection005.hdf5")
+char_detector = load_model("detection002.hdf5")
 Size = namedtuple('Size', 'w h')
 Pos = namedtuple('Pos', 'x y')
 
@@ -44,16 +44,20 @@ def check_text(img, pos):
     return is_text, window_rect
 
 
-def check_scan_line(img, y):
+def detect_text(img):
+    y = 0
     x = 0
     (w,h) = img.size
     data = []
-    while x < w:
-        window_rect = make_rect(Pos(x,y), detector_size)
-        window = img.crop(window_rect)
-        window_data = prepare_image_for_classification(window)
-        data.append(window_data.reshape(detector_size.h,detector_size.w,1))
-        x += detector_size.w / 2
+    while y < h:
+        x = 0
+        while x < w:
+            window_rect = make_rect(Pos(x,y), detector_size)
+            window = img.crop(window_rect)
+            window_data = prepare_image_for_classification(window)
+            data.append(window_data.reshape(detector_size.h,detector_size.w,1))
+            x += detector_size.w / 2
+        y += detector_size.h / 2
 
     result = char_detector.predict(np.array(data))
     return result
@@ -64,18 +68,17 @@ def scan_image_at_scale(img, scale_factor):
     (w,h) = img.size
     y = 0
     result_array = []
+    is_text_vector = detect_text(img)
+    i = 0
 
     while y < h:
         x1 = 0
         x2 = 0
         is_in_word = False
-
         x = 0
-        is_text_vector = check_scan_line(img, y)
-        i = 0
         while x < w:
             window_rect = make_rect(Pos(x,y), detector_size)
-            is_text = is_text_vector[i]
+            is_text = is_text_vector[i] > 0.75
             if is_text:
                 if not is_in_word:
                     is_in_word = True
@@ -118,7 +121,7 @@ def scan_image(img, max_factor=1.0, min_factor=None):
 
 
 def draw_detected_text(img, result_array):
-    draw = ImageDraw.Draw(result_img)
+    draw = ImageDraw.Draw(img)
 
     for rect, text in result_array:
         draw.rectangle(rect, outline=(0,255,0))
