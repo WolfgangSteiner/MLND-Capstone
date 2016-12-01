@@ -36,7 +36,7 @@ def draw_rect(cv_img, rect):
     p1 = (int(rect[0]),int(rect[1]))
     p2 = (int(rect[2]),int(rect[3]))
     color_green = (0,255,0)
-    cv2.rectangle(cv_img, p1, p2, color=color_green, thickness = 2)
+    cv2.rectangle(cv_img, p1, p2, color=color_green, thickness=1)
 
 
 def draw_answer(cv_img, text, rect):
@@ -45,7 +45,7 @@ def draw_answer(cv_img, text, rect):
     draw_rect(cv_img, rect)
     x = int(rect[0])
     y = int(rect[3])
-    cv2.putText(cv_img, text, (x,y), font, fontScale=4, color=color_green, thickness=2)
+    cv2.putText(cv_img, text, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
 def draw_answers(cv_img, answers):
@@ -67,7 +67,8 @@ def draw_probability(cv_img, p):
 #model=load_model('models/train014-svhn.hdf5')
 
 cap = cv2.VideoCapture(0)
-pr.enable()
+#cap.set(cv2.CAP_PROP_FPS, 2)
+#pr.enable()
 
 while(True):
     # Capture frame-by-frame
@@ -77,7 +78,8 @@ while(True):
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     image = Image.fromarray(gray)
-    result_array = scan_image(image, 0.75, 0.25)
+    image = image.filter(ImageFilter.GaussianBlur(radius=0.5))
+    result_array = scan_image(image, 0.5, 0.125)
     draw_answers(frame, result_array)
 
     # Display the resulting frame
@@ -90,5 +92,5 @@ while(True):
 cap.release()
 cv2.destroyAllWindows()
 
-pr.disable()
-pr.print_stats(sort='time')
+#pr.disable()
+#pr.print_stats(sort='time')

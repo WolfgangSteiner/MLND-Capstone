@@ -78,7 +78,7 @@ def scan_image_at_scale(img, scale_factor):
         x = 0
         while x < w:
             window_rect = make_rect(Pos(x,y), detector_size)
-            is_text = is_text_vector[i] > 0.75
+            is_text = is_text_vector[i] > 0.5
             if is_text:
                 if not is_in_word:
                     is_in_word = True
@@ -94,7 +94,6 @@ def scan_image_at_scale(img, scale_factor):
                 text = predict_word(img.crop(word_rect))
                 scaled_word_rect = unscale_rect(word_rect, scale_factors)
                 result_array.append((scaled_word_rect, text))
-                print text
 
             x += detector_size.w / 2
             i += 1
