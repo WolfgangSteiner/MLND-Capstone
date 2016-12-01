@@ -107,7 +107,7 @@ def CharacterSegmentationGenerator(batchsize, options={}):
 
 
 if __name__ == "__main__":
-    image_width = 32
+    image_width = 8
     image_height = 32
     overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)

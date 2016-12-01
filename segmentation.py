@@ -173,6 +173,11 @@ def draw_chars(img, seg_array):
     return result
 
 
+def predict_word(img):
+    seg_array, score_array = segment_characters(img)
+    return classify_characters(img, seg_array)
+
+
 def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':0.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
     n = 0
@@ -222,13 +227,13 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     print "Accuracy: %d/%d = %f" % (correct_predictions, n, float(correct_predictions) / n)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-n', help="max number of test cases", action="store", dest="n", type=int, default=1024*1024)
-parser.add_argument('--directory', help="directory of test cases", action='store', dest='data_dir', default='data')
-parser.add_argument("--visualize", help="save visualization of char segmentation and classification", action="store_true", default=False)
-args = parser.parse_args()
-
-test_segmentation(max_num=args.n, visualize=args.visualize, data_dir=args.data_dir)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', help="max number of test cases", action="store", dest="n", type=int, default=1024*1024)
+    parser.add_argument('--directory', help="directory of test cases", action='store', dest='data_dir', default='data')
+    parser.add_argument("--visualize", help="save visualization of char segmentation and classification", action="store_true", default=False)
+    args = parser.parse_args()
+    test_segmentation(max_num=args.n, visualize=args.visualize, data_dir=args.data_dir)
 
 
 #pr.disable()

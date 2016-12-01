@@ -3,6 +3,7 @@ from PIL import Image, ImageFilter
 import numpy as np
 from keras.models import load_model
 from time import sleep
+from detect_text import scan_image
 
 char_size = 32
 
@@ -28,18 +29,26 @@ def preprocess_image(image):
     return image_data, clip_rect
 
 
-def draw_clip_rect(cv_img, clip_rect):
-    p1 = (clip_rect[0],clip_rect[1])
-    p2 = (clip_rect[2],clip_rect[3])
+def draw_rect(cv_img, rect):
+    p1 = (int(rect[0]),int(rect[1]))
+    p2 = (int(rect[2]),int(rect[3]))
     color_green = (0,255,0)
     cv2.rectangle(cv_img, p1, p2, color=color_green, thickness = 2)
 
-def draw_answer(cv_img, clip_rect, answer):
+
+def draw_answer(cv_img, text, rect):
     font = cv2.FONT_HERSHEY_SIMPLEX
-    x = (clip_rect[0] + clip_rect[2]) / 2
-    y = (clip_rect[1] + clip_rect[3]) / 2
     color_green = (0,255,0)
-    cv2.putText(cv_img, str(answer), (x,y), font, fontScale=4, color=color_green, thickness=2)
+    draw_rect(cv_img, rect)
+    x = int(rect[0])
+    y = int(rect[3])
+    cv2.putText(cv_img, text, (x,y), font, fontScale=4, color=color_green, thickness=2)
+
+
+def draw_answers(cv_img, answers):
+    for rect,text in answers:
+        draw_answer(cv_img, text,rect)
+
 
 def draw_probability(cv_img, p):
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -52,7 +61,7 @@ def draw_probability(cv_img, p):
     cv2.putText(cv_img, "%.3f" % p, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
-model=load_model('models/train014-svhn.hdf5')
+#model=load_model('models/train014-svhn.hdf5')
 
 cap = cv2.VideoCapture(0)
 
@@ -64,18 +73,8 @@ while(True):
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     image = Image.fromarray(gray)
-    image_data, clip_rect = preprocess_image(image)
-
-    ans_vector = model.predict(image_data)[0]
-    ans = ans_vector.argmax()
-    probability = ans_vector[ans]
-
-    draw_clip_rect(frame, clip_rect)
-
-    if (probability > 0.85):
-        draw_answer(frame, clip_rect, ans)
-
-    draw_probability(frame, probability)
+    result_array = scan_image(image, 0.75, 0.25)
+    draw_answers(frame, result_array)
 
     # Display the resulting frame
     cv2.imshow('frame', frame)
