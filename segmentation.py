@@ -12,6 +12,7 @@ image_height = 32
 num_char_columns = 2
 num_char_rows = 32
 segmentation_width = 16
+segmentation_height = 32
 
 print "Loading segmentation classifier..."
 segmentation_classifier = load_model("seg006b-word_end.hdf5")
@@ -35,11 +36,18 @@ def prepare_image_for_classification(image):
 
 #def convert_image_for_classification(image):
 
-def check_segmentation(img, pos):
-    window_image = img.crop((pos[0],pos[1],pos[0]+segmentation_width,pos[1]+32))
-    window_data = prepare_image_for_classification(window_image)
-    y = segmentation_classifier.predict(window_data)
-    return y[0]
+def check_segmentation(img):
+    x = 0
+    (w,h) = img.size
+    data = []
+    while x < w - segmentation_width:
+        window_image = img.crop((x,0,x+segmentation_width,segmentation_height))
+        window_data = np.array(window_image).astype('float32')
+        window_data = window_data.reshape(segmentation_height,segmentation_width,1)
+        data.append(window_data)
+        x += 1
+
+    return segmentation_classifier.predict(np.array(data))
 
 
 def expand_image_for_segmentation(img):
@@ -73,8 +81,11 @@ def segment_characters(img, threshold=0.35):
     filtered_score = 0
     seg_array = []
     score_array = []
+    filtered_score_array = []
+    score_array = check_segmentation(expanded_image)
+    i = 0
     while x < w - segmentation_width:
-        score = check_segmentation(expanded_image, [x,0])
+        score = score_array[i]
         filtered_score = score * a + last_score * b
         last_score = filtered_score
         if filtered_score >= threshold and not is_in_run:
@@ -84,12 +95,13 @@ def segment_characters(img, threshold=0.35):
             is_in_run = False
             seg_array.append((x_start + x - 1) / 2)
 
-        score_array.append((x,32 * (1.0 - filtered_score)))
+        filtered_score_array.append((x,32 * (1.0 - filtered_score)))
         x += 1
+        i += 1
     if is_in_run:
         seg_array.append((x_start + x - 2) / 2)
 
-    return seg_array, score_array
+    return seg_array, filtered_score_array
 
 
 def draw_segmentation(img, seg_array):
