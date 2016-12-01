@@ -4,6 +4,9 @@ import numpy as np
 from keras.models import load_model
 from time import sleep
 from detect_text import scan_image
+import cProfile
+
+pr = cProfile.Profile()
 
 char_size = 32
 
@@ -64,6 +67,7 @@ def draw_probability(cv_img, p):
 #model=load_model('models/train014-svhn.hdf5')
 
 cap = cv2.VideoCapture(0)
+pr.enable()
 
 while(True):
     # Capture frame-by-frame
@@ -85,3 +89,6 @@ while(True):
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
+
+pr.disable()
+pr.print_stats(sort='time')

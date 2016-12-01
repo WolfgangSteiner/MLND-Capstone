@@ -9,7 +9,7 @@ from segmentation import predict_word
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection002.hdf5")
+char_detector = load_model("detection005.hdf5")
 Size = namedtuple('Size', 'w h')
 Pos = namedtuple('Pos', 'x y')
 
@@ -25,7 +25,7 @@ def rescale_image(img, scale_factor):
 def prepare_image_for_classification(image):
     w,h = image.size
     image_data = np.array(image).astype('float32')
-    return image_data.reshape(1,h,w,1)
+    return image_data.reshape(h,w,1)
 
 
 def make_rect(pos, size):
@@ -44,6 +44,21 @@ def check_text(img, pos):
     return is_text, window_rect
 
 
+def check_scan_line(img, y):
+    x = 0
+    (w,h) = img.size
+    data = []
+    while x < w:
+        window_rect = make_rect(Pos(x,y), detector_size)
+        window = img.crop(window_rect)
+        window_data = prepare_image_for_classification(window)
+        data.append(window_data.reshape(detector_size.h,detector_size.w,1))
+        x += detector_size.w / 2
+
+    result = char_detector.predict(np.array(data))
+    return result
+
+
 def scan_image_at_scale(img, scale_factor):
     img, scale_factors = rescale_image(img, scale_factor)
     (w,h) = img.size
@@ -56,8 +71,11 @@ def scan_image_at_scale(img, scale_factor):
         is_in_word = False
 
         x = 0
+        is_text_vector = check_scan_line(img, y)
+        i = 0
         while x < w:
-            is_text, window_rect = check_text(img, Pos(x,y))
+            window_rect = make_rect(Pos(x,y), detector_size)
+            is_text = is_text_vector[i]
             if is_text:
                 if not is_in_word:
                     is_in_word = True
@@ -76,6 +94,7 @@ def scan_image_at_scale(img, scale_factor):
                 print text
 
             x += detector_size.w / 2
+            i += 1
         y += detector_size.h / 2
 
     return result_array
