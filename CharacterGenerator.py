@@ -11,15 +11,7 @@ import cairo
 import string
 from keras.utils.np_utils import to_categorical
 from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
-
-font_blacklist = (
-    # Linux fonts
-    "FiraMono", "Corben", "D050000L","jsMath", "Redacted",
-    "RedactedScript", "AdobeBlank", "EncodeSans", "cwTeX", "Droid", "Yinmar", "Lao",
-    # Apple fonts
-    "Apple Braille", "NISC18030", "Wingdings", "Webdings", "LastResort",
-    "Bodoni Ornaments", "Hoefler Text Ornaments", "ZapfDingbats", "Kokonor",
-    "Farisi", "Symbol", "Diwan Thuluth", "Diwan")
+from FontSource import FontSource
 
 char_height = 32
 char_width = 32
@@ -29,91 +21,7 @@ num_char_columns = 16
 num_char_rows = 32
 debug = False
 char_source = NumericCharacterSource()
-
-def calc_text_size(text, font_tuple):
-    font_name, font = font_tuple
-    try:
-        (w,h) = font.getsize(text)
-        h -= font.getoffset(text)[1]
-        return (w,h)
-    except IOError:
-        print("font.getsize failed for font:%s" % font_name)
-        raise IOError
-
-
-# Blacklist symbol fonts and fonts not working with PIL
-def is_font_blacklisted(font_file):
-    pattern = re.compile("^[A-Z]")
-    font_family = os.path.basename(font_file).split(".")[0].split("-")[0]
-    return font_family.startswith(font_blacklist) or not pattern.match(font_family)
-
-
-def is_latin_font(font_subdir):
-    try:
-        fo = open(font_subdir + "/METADATA.pb", "r")
-        return 'subsets: "latin"\n' in fo.readlines()
-    except:
-        return False
-
-
-def load_fonts_in_subdir(directory_path, font_array):
-    for font_file in glob.iglob(directory_path + "/*.ttf"):
-        if not is_font_blacklisted(font_file):
-            try:
-                font_size = 16
-                text_height = 0
-                font = None
-
-                while text_height < char_height * 0.9:
-                    font = ImageFont.truetype(font=font_file, size=font_size)
-                    _,text_height = calc_text_size("0123456789", (font_file, font))
-                    font_size += 1
-
-                max_font_size = font_size - 1
-
-                font_array.append((font_file, max_font_size))
-                print("adding font: %s, size %d" % (font_file, max_font_size))
-            except IOError:
-                print("Error loading font: %s" % font_file)
-
-
-# Collect all ttf fonts in one font location, except those blacklisted.
-def find_fonts_in_directory(directory_path):
-    font_array = []
-    for font_subdir in glob.iglob(directory_path + "/*"):
-        if is_latin_font(font_subdir):
-            load_fonts_in_subdir(font_subdir, font_array)
-        else:
-            print("Skipping non-latin fonts in : %s" % font_subdir)
-
-    return font_array
-
-
-def find_fonts():
-    font_array = []
-    for font_dir in ("fonts-master/ofl", "fonts-master/apache", ):
-        font_array += find_fonts_in_directory(font_dir)
-
-    return font_array
-
-
-try:
-    print("Loading fonts from font_cache.pickle ...")
-    file = open('font_cache.pickle', 'rb')
-    font_array = pickle.load(file)
-except IOError:
-    font_array = find_fonts()
-    file = open('font_cache.pickle', 'wb')
-    print ("Writing font_cache.pickle ...")
-    pickle.dump(font_array, file, -1)
-
-
-def random_font(options={}):
-    min_size = options.get('min_size', 0.75)
-    max_size = options.get('max_size', 1.0)
-    font_name, max_font_size = random.choice(font_array)
-    size = random.randint(int(max_font_size * min_size), int(max_font_size * max_size))
-    return (font_name, ImageFont.truetype(font_name, size))
+font_source = FontSource()
 
 
 def get_color(color, alpha=255):
@@ -273,7 +181,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
     image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
-    (w,h) = calc_text_size(text, font_tuple)
+    (w,h) = FontSource.calc_text_size(text, font_tuple)
     if left_aligned:
         x = 0.5 * char_width + random.randint(-2,2)
     else:
@@ -283,7 +191,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
     if random.random() > 0.5:
         text = char_source.random_char() + text
-        (w2,h2) = calc_text_size(text, font_tuple)
+        (w2,h2) = FontSource.calc_text_size(text, font_tuple)
         x -= (w2 - w)
 
     if random.random() > 0.5:
@@ -317,7 +225,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
 
 def create_random_char(options={}):
-    font_tuple = random_font(options)
+    font_tuple = font_source.random_font(options)
     return create_char(char_width, char_height, font_tuple, char_source.random_char())
 
 
@@ -329,7 +237,7 @@ def CharacterGenerator(batchsize, options={}):
         x = []
         y = []
         for i in range(0,batchsize):
-            font_tuple = random_font(options)
+            font_tuple = font_source.random_font(options)
             char = char_source.random_char()
             char_image = create_char(char_width, char_height, font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
@@ -357,7 +265,7 @@ if __name__ == "__main__":
 
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
-            font_tuple=random_font(options)
+            font_tuple = font_source.random_font(options)
             char = char_source.random_char()
             overview_image.paste(create_char(char_width, char_height, font_tuple, char, options), (char_width*i, char_height*j))
 
