@@ -1,6 +1,7 @@
-from CharacterGenerator import random_font, create_char_background, rotate, add_noise, blur, crop, perspective_transform
-from CharacterGenerator import random_background_color, random_char, calc_text_size, draw_text
-from CharacterGenerator import add_outline, add_shadow
+from CharacterGenerator import create_char_background, rotate, add_noise, blur, crop, perspective_transform
+from CharacterGenerator import random_background_color, draw_text
+from CharacterGenerator import add_outline, add_shadow, font_source
+from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
 import numpy as np
@@ -12,17 +13,16 @@ import pickle
 num_char_columns = 2
 num_char_rows = 32
 debug = True
+char_source = NumericCharacterSource()
 
 def create_char_sequence(image_width = 128, image_height = 32, options={}):
     canvas_width = image_width * 2
     canvas_height = image_height * 2
-    font_tuple=random_font(options)
-    font = font_tuple[1]
-    font_name = font_tuple[0]
+    font = font_source.random_font(options)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
-    text = random_char()
+    text = char_source.random_char()
 
     image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
@@ -30,16 +30,15 @@ def create_char_sequence(image_width = 128, image_height = 32, options={}):
     text = ""
 
     for i in range(0,random.randint(1,10)):
-        text += random_char()
+        text += char_source.random_char()
 
-    (w,h) = calc_text_size(text, font_tuple)
+    (w,h) = font.calc_text_size(text)
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
     margin = random.random() * 16
     x += (random.random() - 0.5) * 0.5 * margin
     y += (random.random() - 0.5) * (image_height - h)
     y -= font.getoffset(text)[1]
-
 
     draw = ImageDraw.Draw(char_image)
 
@@ -106,6 +105,11 @@ if __name__ == "__main__":
     image_width = 256
     image_height = 32
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
+    options['full_alphabet'] = True
+
+    full_alphabet = options.get('full_alphabet', False)
+    if full_alphabet:
+        char_source = AlphaNumericCharacterSource()
 
     if args.save:
         labels = {}
