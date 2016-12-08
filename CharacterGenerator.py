@@ -8,13 +8,15 @@ import numpy as np
 import re
 import math
 import cairo
+import string
 from keras.utils.np_utils import to_categorical
+from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 
 font_blacklist = (
     # Linux fonts
     "FiraMono", "Corben", "D050000L","jsMath", "Redacted",
     "RedactedScript", "AdobeBlank", "EncodeSans", "cwTeX", "Droid", "Yinmar", "Lao",
-        # Apple fonts
+    # Apple fonts
     "Apple Braille", "NISC18030", "Wingdings", "Webdings", "LastResort",
     "Bodoni Ornaments", "Hoefler Text Ornaments", "ZapfDingbats", "Kokonor",
     "Farisi", "Symbol", "Diwan Thuluth", "Diwan")
@@ -26,6 +28,7 @@ canvas_height = 2 * char_height
 num_char_columns = 16
 num_char_rows = 32
 debug = False
+char_source = NumericCharacterSource()
 
 def calc_text_size(text, font_tuple):
     font_name, font = font_tuple
@@ -36,6 +39,7 @@ def calc_text_size(text, font_tuple):
     except IOError:
         print("font.getsize failed for font:%s" % font_name)
         raise IOError
+
 
 # Blacklist symbol fonts and fonts not working with PIL
 def is_font_blacklisted(font_file):
@@ -50,6 +54,7 @@ def is_latin_font(font_subdir):
         return 'subsets: "latin"\n' in fo.readlines()
     except:
         return False
+
 
 def load_fonts_in_subdir(directory_path, font_array):
     for font_file in glob.iglob(directory_path + "/*.ttf"):
@@ -91,6 +96,7 @@ def find_fonts():
 
     return font_array
 
+
 try:
     print("Loading fonts from font_cache.pickle ...")
     file = open('font_cache.pickle', 'rb')
@@ -101,6 +107,7 @@ except IOError:
     print ("Writing font_cache.pickle ...")
     pickle.dump(font_array, file, -1)
 
+
 def random_font(options={}):
     min_size = options.get('min_size', 0.75)
     max_size = options.get('max_size', 1.0)
@@ -108,8 +115,10 @@ def random_font(options={}):
     size = random.randint(int(max_font_size * min_size), int(max_font_size * max_size))
     return (font_name, ImageFont.truetype(font_name, size))
 
+
 def get_color(color, alpha=255):
     return (color,color,color,alpha)
+
 
 def add_outline(draw, x, y, font, char, text_color):
     while True:
@@ -135,6 +144,7 @@ def add_shadow(image, x, y, font, char, text_color):
         result = result.filter(ImageFilter.BLUR)
 
     return result
+
 
 def displacement(char_width, char_height):
     return np.array([random.random() * char_width / 4, random.random() * char_height / 4])
@@ -195,13 +205,6 @@ def create_char_background(width, height, text_color, background_color, min_colo
         image = Image.new('RGBA', (width, height), get_color(background_color))
 
     return image
-
-
-def random_char():
-    return random.choice(random_char.char_array)
-
-
-random_char.char_array = list("0123456789")
 
 
 def perspective_transform(char_image):
@@ -279,12 +282,12 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
     y = 0.5 * (canvas_height - h)
 
     if random.random() > 0.5:
-        text = random_char() + text
+        text = char_source.random_char() + text
         (w2,h2) = calc_text_size(text, font_tuple)
         x -= (w2 - w)
 
     if random.random() > 0.5:
-        text = text + random_char()
+        text = text + char_source.random_char()
 
     x += (random.random() - 0.5) * 0.5 * (char_width - w)
     y += (random.random() - 0.5) * (char_height - h)
@@ -315,7 +318,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
 def create_random_char(options={}):
     font_tuple = random_font(options)
-    return create_char(char_width, char_height, font_tuple, random_char())
+    return create_char(char_width, char_height, font_tuple, char_source.random_char())
 
 
 def CharacterGenerator(batchsize, options={}):
@@ -327,7 +330,7 @@ def CharacterGenerator(batchsize, options={}):
         y = []
         for i in range(0,batchsize):
             font_tuple = random_font(options)
-            char = random_char()
+            char = char_source.random_char()
             char_image = create_char(char_width, char_height, font_tuple, char, options)
             char_data = np.array(char_image).astype('float32')
 
@@ -340,19 +343,22 @@ def CharacterGenerator(batchsize, options={}):
             char_data = (char_data - mean) / std
 
             x.append(char_data.reshape(char_height,char_width,1))
-            y.append(random_char.char_array.index(char))
+            y.append(char_source.index_for_char(char))
 
-        yield np.array(x),to_categorical(y,len(random_char.char_array))
+        yield np.array(x),to_categorical(y,char_source.num_chars())
 
 
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'resize_char':True}
+    include_alphabet = options.get('include_alphabet', False)
+    char_source = AlphaNumericCharacterSource()
+
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             font_tuple=random_font(options)
-            char = random_char()
+            char = char_source.random_char()
             overview_image.paste(create_char(char_width, char_height, font_tuple, char, options), (char_width*i, char_height*j))
 
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
