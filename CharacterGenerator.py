@@ -70,7 +70,7 @@ def draw_line(draw, p1, p2, color, width, alpha=255):
 
 
 def draw_text(draw, x, y, text, font, color):
-    draw.text((x,y), text, font=font, fill=get_color(color))
+    draw.text((x,y), text, font=font.image_font, fill=get_color(color))
 
 
 def draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=4):
@@ -166,13 +166,11 @@ def normalize(char_image, factor):
     return Image.fromarray(array).convert('L')
 
 
-def create_char(char_width, char_height, font_tuple, char, options={}):
+def create_char(char_width, char_height, font, char, options={}):
     left_aligned = options.get('left_aligned', False)
     resize_char = options.get('resize_char', False)
     canvas_width = char_width * 2
     canvas_height = char_height * 2
-    font = font_tuple[1]
-    font_name = font_tuple[0]
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
@@ -181,7 +179,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
     image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
-    (w,h) = FontSource.calc_text_size(text, font_tuple)
+    (w,h) = font.calc_text_size(text)
     if left_aligned:
         x = 0.5 * char_width + random.randint(-2,2)
     else:
@@ -191,7 +189,7 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
     if random.random() > 0.5:
         text = char_source.random_char() + text
-        (w2,h2) = FontSource.calc_text_size(text, font_tuple)
+        (w2,h2) = font.calc_text_size(text)
         x -= (w2 - w)
 
     if random.random() > 0.5:
@@ -225,21 +223,24 @@ def create_char(char_width, char_height, font_tuple, char, options={}):
 
 
 def create_random_char(options={}):
-    font_tuple = font_source.random_font(options)
-    return create_char(char_width, char_height, font_tuple, char_source.random_char())
+    font = font_source.random_font(options)
+    return create_char(char_width, char_height, font, char_source.random_char())
 
 
 def CharacterGenerator(batchsize, options={}):
     mean = options.get('mean', None)
     std = options.get('std', None)
+    full_alphabet = options.get('full_alphabet', False)
+    if full_alphabet:
+        char_source = AlphaNumericCharacterSource()
 
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
-            font_tuple = font_source.random_font(options)
+            font = font_source.random_font(options)
             char = char_source.random_char()
-            char_image = create_char(char_width, char_height, font_tuple, char, options)
+            char_image = create_char(char_width, char_height, font, char, options)
             char_data = np.array(char_image).astype('float32')
 
             if mean == None:
@@ -260,14 +261,15 @@ if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'resize_char':True}
-    include_alphabet = options.get('include_alphabet', False)
-    char_source = AlphaNumericCharacterSource()
+    full_alphabet = options.get('full_alphabet', False)
+    if full_alphabet:
+        char_source = AlphaNumericCharacterSource()
 
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
-            font_tuple = font_source.random_font(options)
+            font = font_source.random_font(options)
             char = char_source.random_char()
-            overview_image.paste(create_char(char_width, char_height, font_tuple, char, options), (char_width*i, char_height*j))
+            overview_image.paste(create_char(char_width, char_height, font, char, options), (char_width*i, char_height*j))
 
             #overview_image.paste(Image.fromarray((batch[0][i].reshape(char_height,char_width) * 255).astype('uint8'),mode="L"), (char_width*i, char_height*j))
 

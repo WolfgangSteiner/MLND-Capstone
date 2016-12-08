@@ -2,7 +2,7 @@ import pickle
 import random
 import os
 from PIL import ImageFont
-
+from Font import Font
 
 class FontSource(object):
     font_blacklist = (
@@ -29,17 +29,6 @@ class FontSource(object):
             print ("Writing font_cache.pickle ...")
             pickle.dump(self.font_array, file, -1)
 
-    @staticmethod
-    def calc_text_size(text, font_tuple):
-        font_name, font = font_tuple
-        try:
-            (w,h) = font.getsize(text)
-            h -= font.getoffset(text)[1]
-            return (w,h)
-        except IOError:
-            print("font.getsize failed for font:%s" % font_name)
-            raise IOError
-
 
     # Blacklist symbol fonts and fonts not working with PIL
     def is_font_blacklisted(font_file):
@@ -62,8 +51,8 @@ class FontSource(object):
         font = None
 
         while text_height < self.char_height * 0.9:
-            font = ImageFont.truetype(font=font_file, size=font_size)
-            _,text_height = calc_text_size("0123456789", (font_file, font))
+            font = Font.from_ttf_file(font_file, font_size)
+            _,text_height = font.calc_text_size("0123456789")
             font_size += 1
 
         return font_size - 1
@@ -100,4 +89,4 @@ class FontSource(object):
         max_size = options.get('max_size', 1.0)
         font_name, max_font_size = random.choice(self.font_array)
         size = random.randint(int(max_font_size * min_size), int(max_font_size * max_size))
-        return (font_name, ImageFont.truetype(font_name, size))
+        return Font.from_ttf_file(font_name, size)
