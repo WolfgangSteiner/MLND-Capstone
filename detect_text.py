@@ -9,7 +9,7 @@ from segmentation import predict_word
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection002.hdf5")
+char_detector = load_model("detection008.hdf5")
 Size = namedtuple('Size', 'w h')
 Pos = namedtuple('Pos', 'x y')
 
