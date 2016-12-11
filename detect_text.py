@@ -161,7 +161,7 @@ if __name__ == "__main__":
     for id, label in labels.iteritems():
         result_array = test_image_file(args.data_dir + "/" + id + ".png")
 
-        predicted_label = result_array[0][1] if len result_array else ""
+        predicted_label = result_array[0][1] if len(result_array) else ""
         predicted_text = ""
 
         for r in result_array:
