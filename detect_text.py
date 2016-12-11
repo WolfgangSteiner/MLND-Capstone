@@ -170,7 +170,6 @@ if __name__ == "__main__":
         if predicted_label == label:
             true_positives += 1
         n += 1
-        predicted_strings =
 
         accuracy = float(true_positives)/n
         print "%d/%d: %s -> %s accuracy = %.2f" % (n, len(labels), label, predicted_text, accuracy)
