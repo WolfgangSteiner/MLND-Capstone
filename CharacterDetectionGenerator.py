@@ -85,8 +85,7 @@ def CharacterDetectionGenerator(batchsize, options={}):
     image_width = options.get('image_width', 32)
     image_height = 32
     full_alphabet = options.get('full_alphabet', False)
-    if full_alphabet:
-        char_source = AlphaNumericCharacterSource()
+    char_source = AlphaNumericCharacterSource() if full_alphabet else NumericCharacterSource()
 
     while True:
         x = []
@@ -110,8 +109,7 @@ if __name__ == "__main__":
     options['full_alphabet'] = True
 
     full_alphabet = options.get('full_alphabet', False)
-    if full_alphabet:
-        char_source = AlphaNumericCharacterSource()
+    char_source = AlphaNumericCharacterSource() if full_alphabet else NumericCharacterSource()
 
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
