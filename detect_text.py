@@ -140,10 +140,7 @@ def scan_image_file(file_path):
 def test_image_file(file_path):
     img = Image.open(file_path)
     result_array = scan_image(img, 0.75, 0.25)
-    if len(result_array):
-        return result_array[0][1]
-    else:
-        return ""
+    return result_array
 
 
 if __name__ == "__main__":
@@ -162,11 +159,20 @@ if __name__ == "__main__":
     true_positives = 0
 
     for id, label in labels.iteritems():
-        predicted_label = test_image_file(args.data_dir + "/" + id + ".png")
+        result_array = test_image_file(args.data_dir + "/" + id + ".png")
+
+        predicted_label = result_array[0][1] if len result_array else ""
+        predicted_text = ""
+
+        for r in result_array:
+            predicted_text += r[1] + " "
+
         if predicted_label == label:
             true_positives += 1
         n += 1
+        predicted_strings =
+
         accuracy = float(true_positives)/n
-        print "%d/%d: %s -> %s accuracy = %.2f" % (n, len(labels), label, predicted_label, accuracy)
+        print "%d/%d: %s -> %s accuracy = %.2f" % (n, len(labels), label, predicted_text, accuracy)
 
     print
