@@ -78,8 +78,8 @@ while(True):
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     image = Image.fromarray(gray)
-    image = image.filter(ImageFilter.GaussianBlur(radius=0.5))
-    result_array = scan_image(image, 0.5, 0.125)
+    #image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
+    result_array = scan_image(image, 1/2.0, 1/32.0)
     draw_answers(frame, result_array)
 
     # Display the resulting frame

@@ -14,6 +14,7 @@ Size = namedtuple('Size', 'w h')
 Pos = namedtuple('Pos', 'x y')
 
 detector_size = Size(32,32)
+detector_overlap = 2
 
 def rescale_image(img, scale_factor):
     (w,h) = img.size
@@ -56,8 +57,8 @@ def detect_text(img):
             window = img.crop(window_rect)
             window_data = prepare_image_for_classification(window)
             data.append(window_data.reshape(detector_size.h,detector_size.w,1))
-            x += detector_size.w / 2
-        y += detector_size.h / 2
+            x += detector_size.w / detector_overlap
+        y += detector_size.h / detector_overlap
 
     result = char_detector.predict(np.array(data))
     return result
@@ -78,7 +79,7 @@ def scan_image_at_scale(img, scale_factor):
         x = 0
         while x < w:
             window_rect = make_rect(Pos(x,y), detector_size)
-            is_text = is_text_vector[i] > 0.5
+            is_text = is_text_vector[i] > 0.25
             if is_text:
                 if not is_in_word:
                     is_in_word = True
@@ -87,7 +88,7 @@ def scan_image_at_scale(img, scale_factor):
 
                 x2 = x + detector_size.w
                 is_in_word = True
-            elif is_in_word:
+            elif is_in_word and x > x2 + detector_size.w + 1:
                 y2 = y + detector_size.h
                 word_rect = [x1, y, x2, y2]
                 is_in_word = False
@@ -95,9 +96,9 @@ def scan_image_at_scale(img, scale_factor):
                 scaled_word_rect = unscale_rect(word_rect, scale_factors)
                 result_array.append((scaled_word_rect, text))
 
-            x += detector_size.w / 2
+            x += detector_size.w / detector_overlap
             i += 1
-        y += detector_size.h / 2
+        y += detector_size.h / detector_overlap
 
     return result_array
 
