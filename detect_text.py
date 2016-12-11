@@ -140,6 +140,9 @@ def scan_image_file(file_path):
 def test_image_file(file_path):
     img = Image.open(file_path)
     result_array = scan_image(img, 0.75, 0.25)
+    result_img = img.convert('RGB')
+    draw_detected_text(result_img, result_array)
+    result_img.show()
     return result_array
 
 
