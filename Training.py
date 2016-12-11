@@ -170,7 +170,7 @@ class Training(object):
         self.use_batchnorm = True
         self.output_file_stem = argv[0].split(".")[0]
         self.generator_options = {}
-        self.optimizer = Adagrad(lr=0.01, epsilon=1e-08, decay=0.0)
+        self.lr = 0.01
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
         self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
         self.csv_logger = CSVLogger(self.output_file_stem + ".log")
@@ -193,7 +193,7 @@ class Training(object):
 
     def compile(self, loss_function='categorical_crossentropy'):
         self.model.compile(
-            optimizer=self.optimizer,
+            optimizer=Adagrad(self.lr, epsilon=1e-08, decay=0.0),
             loss=loss_function,
             metrics=['accuracy'])
 
