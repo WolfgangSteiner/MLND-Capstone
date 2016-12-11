@@ -233,7 +233,9 @@ def CharacterGenerator(batchsize, options={}):
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
-
+    else:
+        char_source = NumericCharacterSource()        
+        
     while True:
         x = []
         y = []
