@@ -2,7 +2,7 @@
 from __future__ import print_function
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
-import glob, os, os.path
+import os, os.path
 import pickle
 import numpy as np
 import re

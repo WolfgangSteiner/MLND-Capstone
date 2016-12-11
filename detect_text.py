@@ -1,10 +1,11 @@
 #from CharacterSequenceGenerator import create_char_sequence
 import numpy as np
-import pickle, sys, argparse
+import pickle, sys, argparse, glob, pickle
 from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 from collections import namedtuple
 from segmentation import predict_word
+import argparse
 
 def quantize(a, q):
     return int(a/q) * q
@@ -136,5 +137,36 @@ def scan_image_file(file_path):
     result_img.show()
 
 
+def test_image_file(file_path):
+    img = Image.open(file_path)
+    result_array = scan_image(img, 0.75, 0.25)
+    if len(result_array):
+        return result_array[0][1]
+    else:
+        return ""
+
+
 if __name__ == "__main__":
-    scan_image_file("bla/a635a7dc-5841-4423-a643-496853ca089f.png")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
+    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
+    args = parser.parse_args()
+
+    try:
+        f = open(args.data_dir + '/labels.pickle', 'rb')
+        labels = pickle.load(f)
+    except:
+        raise IOError
+
+    n = 0
+    true_positives = 0
+
+    for id, label in labels.iteritems():
+        predicted_label = test_image_file(args.data_dir + "/" + id + ".png")
+        if predicted_label == label:
+            true_positives += 1
+        n += 1
+        sys.stdout.write("\r%d/%d: accuracy = %.2f%%" % (n, len(labels), float(true_positives)/n)*100.0)
+        sys.stdout.flush()
+
+    print

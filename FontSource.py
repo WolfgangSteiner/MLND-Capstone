@@ -1,6 +1,6 @@
 import pickle
 import random
-import os
+import os, glob
 from PIL import ImageFont
 from Font import Font
 
