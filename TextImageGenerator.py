@@ -8,7 +8,6 @@ import uuid
 import argparse
 import sys, errno, os
 import pickle
-from segmentation import
 
 num_char_columns = 2
 num_char_rows = 32
