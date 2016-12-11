@@ -166,7 +166,7 @@ if __name__ == "__main__":
         if predicted_label == label:
             true_positives += 1
         n += 1
-        sys.stdout.write("\r%d/%d: accuracy = %.2f%%" % (n, len(labels), float(true_positives)/n*100.0))
-        sys.stdout.flush()
+        accuracy = float(true_positives)/n
+        print "%d/%d: %s -> %s accuracy = %.2f" % (n, len(labels), label, predicted_label, accuracy)
 
     print
