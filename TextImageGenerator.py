@@ -1,6 +1,6 @@
-from CharacterGenerator import random_font, create_char_background, rotate, add_noise, blur, crop, perspective_transform
-from CharacterGenerator import random_background_color, random_char, calc_text_size, draw_text
-from CharacterGenerator import add_outline, add_shadow
+from CharacterGenerator import create_char_background, rotate, add_noise, blur, crop, perspective_transform
+from CharacterGenerator import random_background_color, draw_text
+from CharacterGenerator import add_outline, add_shadow, font_source
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
 import numpy as np
@@ -8,30 +8,31 @@ import uuid
 import argparse
 import sys, errno, os
 import pickle
+from CharacterSource import NumericCharacterSource
+from FontSource import FontSource
 
 num_char_columns = 2
 num_char_rows = 32
 debug = True
+char_source = NumericCharacterSource()
 
 def create_text_image(image_width = 128, image_height = 32, options={}):
     canvas_width = 1920
     canvas_height = 1080
-    font_tuple=random_font(options)
-    font = font_tuple[1]
-    font_name = font_tuple[0]
+    font=font_source.random_font(options)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
-    text = random_char()
+    text = char_source.random_char()
 
     image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""
     for i in range(0,random.randint(1,10)):
-        text += random_char()
+        text += char_source.random_char()
 
-    (w,h) = calc_text_size(text, font_tuple)
+    (w,h) = font.calc_text_size(text)
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
     margin = random.random() * 16
@@ -123,11 +124,5 @@ if __name__ == "__main__":
         pickle.dump(labels, file, -1)
 
     else:
-        overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
-        overview_draw = ImageDraw.Draw(overview_image)
-        for j in range(0,num_char_rows):
-            for i in range(0,num_char_columns):
-                char_image, label = create_text_image(image_width, image_height, options)
-                overview_image.paste(char_image, (image_width*i, image_height*j))
-
-        overview_image.save("overview.png")
+        char_image, label = create_text_image(image_width, image_height, options)
+        char_image.save("overview.png")
