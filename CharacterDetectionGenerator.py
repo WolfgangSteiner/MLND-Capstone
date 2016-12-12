@@ -39,10 +39,10 @@ def create_detection_example(image_width, image_height, options={}):
     is_word_end = random.random() > 0.5
 
     (w,h) = font.calc_text_size(text)
-    x = 0.5 * (canvas_height - h)
+    x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
 
-    if float(h) / image_height < 0.25:
+    if float(h) / image_height < 0.4:
         label = False
 
     while not is_word_start and random.random() > 0.5:
@@ -54,11 +54,10 @@ def create_detection_example(image_width, image_height, options={}):
         text = text + char_source.random_char()
 
 #    x += random.randint(-2,2)
-    y += (random.random() - 0.5) * image_height * 0.25
     y -= font.getoffset(text)[1]
 
-    x += random_offset(image_width * 0.4)
-    y += random_offset(image_height * 0.4)
+    x += random_offset(image_width * 0.5)
+    y += random_offset(image_height * 0.5)
 
     draw = ImageDraw.Draw(char_image)
 
