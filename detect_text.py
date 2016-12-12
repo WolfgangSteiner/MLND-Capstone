@@ -15,7 +15,7 @@ Size = namedtuple('Size', 'w h')
 Pos = namedtuple('Pos', 'x y')
 
 detector_size = Size(32,32)
-detector_overlap = 2
+detector_overlap = 4
 
 def rescale_image(img, scale_factor):
     (w,h) = img.size
@@ -42,7 +42,7 @@ def check_text(img, pos):
     window_rect = make_rect(pos, detector_size)
     window = img.crop(window_rect)
     window_data = prepare_image_for_classification(window)
-    is_text = char_detector.predict(window_data)[0] > 0.75
+    is_text = char_detector.predict(window_data)[0] > 0.95
     return is_text, window_rect
 
 
@@ -116,7 +116,7 @@ def scan_image(img, max_factor=1.0, min_factor=None):
 
     while img.size[0] * factor > min_size.w and img.size[1] * factor > min_size.h:
         result_array += scan_image_at_scale(img, factor)
-        factor *= 0.75
+        factor *= 0.9
 
     return result_array
 
@@ -139,7 +139,7 @@ def scan_image_file(file_path):
 
 def test_image_file(file_path):
     img = Image.open(file_path)
-    result_array = scan_image(img, 0.75, 0.25)
+    result_array = scan_image(img, 0.75, 0.025)
     result_img = img.convert('RGB')
     draw_detected_text(result_img, result_array)
     result_img.show()
