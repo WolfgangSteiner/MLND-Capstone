@@ -6,36 +6,36 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageC
 from collections import namedtuple
 from segmentation import predict_word
 import argparse
+from RectangleArray import RectangleArray
+from Rectangle import Rectangle
+from Point import Point
 
 def quantize(a, q):
     return int(a/q) * q
 
 char_detector = load_model("detection008.hdf5")
-Size = namedtuple('Size', 'w h')
-Pos = namedtuple('Pos', 'x y')
 
-detector_size = Size(32,32)
+detector_size = Point(32,32)
 detector_overlap = 4
 
 def rescale_image(img, scale_factor):
     (w,h) = img.size
-    new_w = quantize(w * scale_factor,detector_size.w)
-    new_h = quantize(h * scale_factor,detector_size.h)
-    return img.resize((new_w, new_h), resample=Image.BICUBIC), (float(new_w) / w, float(new_h) / h)
+    new_w = quantize(w * scale_factor,detector_size.x)
+    new_h = quantize(h * scale_factor,detector_size.y)
+    return img.resize((new_w, new_h), resample=Image.BICUBIC), Point(float(new_w) / w, float(new_h) / h)
+
+
+def rescale_image_to_height(img, height):
+    (w,h) = img.size
+    factor = float(height) / h
+    new_w = int(w * factor) if factor < 0.75 or factor > 1.25 else w
+    return img.resize((new_w, h), resample=Image.BICUBIC)
 
 
 def prepare_image_for_classification(image):
     w,h = image.size
     image_data = np.array(image).astype('float32')
     return image_data.reshape(h,w,1)
-
-
-def make_rect(pos, size):
-    return [pos.x, pos.y, pos.x + size.w, pos.y + size.h]
-
-
-def unscale_rect(rect, factors):
-    return [rect[0]/factors[0], rect[1]/factors[1], rect[2]/factors[0], rect[3]/factors[1]]
 
 
 def check_text(img, pos):
@@ -54,18 +54,18 @@ def detect_text(img):
     while y < h:
         x = 0
         while x < w:
-            window_rect = make_rect(Pos(x,y), detector_size)
-            window = img.crop(window_rect)
+            window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
+            window = img.crop(window_rect.as_array())
             window_data = prepare_image_for_classification(window)
-            data.append(window_data.reshape(detector_size.h,detector_size.w,1))
-            x += detector_size.w / detector_overlap
-        y += detector_size.h / detector_overlap
+            data.append(window_data.reshape(detector_size.y,detector_size.x,1))
+            x += detector_size.x / detector_overlap
+        y += detector_size.y / detector_overlap
 
     result = char_detector.predict(np.array(data))
     return result
 
 
-def scan_image_at_scale(img, scale_factor):
+def scan_image_at_scale(img, scale_factor, rect_array):
     img, scale_factors = rescale_image(img, scale_factor)
     (w,h) = img.size
     y = 0
@@ -79,32 +79,25 @@ def scan_image_at_scale(img, scale_factor):
         is_in_word = False
         x = 0
         while x < w:
-            window_rect = make_rect(Pos(x,y), detector_size)
+            window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
             is_text = is_text_vector[i] > 0.25
             if is_text:
-                if not is_in_word:
-                    is_in_word = True
-                    x1 = x
-                    x2 = x1
+                rect_array.add(window_rect.unscale(scale_factors))
 
-                x2 = x + detector_size.w
-                is_in_word = True
-            elif is_in_word and x > x2 + detector_size.w + 1:
-                y2 = y + detector_size.h
-                word_rect = [x1, y, x2, y2]
-                is_in_word = False
-                text = predict_word(img.crop(word_rect))
-                scaled_word_rect = unscale_rect(word_rect, scale_factors)
-                result_array.append((scaled_word_rect, text))
-
-            x += detector_size.w / detector_overlap
+            x += detector_size.x / detector_overlap
             i += 1
-        y += detector_size.h / detector_overlap
+        y += detector_size.y / detector_overlap
 
-    return result_array
+
+def infer_text(img, rect):
+    text_line_img = img.crop(rect.x1(), rect.y1(), rect.x2(), rect.y2())
+    text_line_img = rescale_image_to_height(detector_size.y)
+    text = predict_word(text_line_img)
+    return text
 
 
 def scan_image(img, max_factor=1.0, min_factor=None):
+    rect_array = RectangleArray()
     factor = max_factor
     result_array = []
     (w,h) = img.size
@@ -112,13 +105,20 @@ def scan_image(img, max_factor=1.0, min_factor=None):
     if min_factor == None:
         min_size = detector_size
     else:
-        min_size = Size(max(min_factor * w, detector_size.w), max(min_factor * h, detector_size.h))
+        min_size = Point(max(min_factor * w, detector_size.x), max(min_factor * h, detector_size.y))
 
-    while img.size[0] * factor > min_size.w and img.size[1] * factor > min_size.h:
-        result_array += scan_image_at_scale(img, factor)
+    while img.size[0] * factor > min_size.x and img.size[1] * factor > min_size.y:
+        scan_image_at_scale(img, factor, rect_array)
         factor *= 0.9
 
-    return result_array
+    rect_array.finalize()
+    for r in rect_array.list:
+        text = infer_text(img, r)
+        if len(text):
+            result_array
+            rect_array.append((r,text))
+
+    return rect_array
 
 
 def draw_detected_text(img, result_array):
