@@ -81,7 +81,7 @@ def scan_image_at_scale(img, scale_factor, rect_array):
         x = 0
         while x < w:
             window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
-            is_text = is_text_vector[i] > 0.25
+            is_text = is_text_vector[i] > 0.95
             if is_text:
                 rect_array.add(window_rect.unscale(scale_factors))
 
@@ -118,7 +118,7 @@ def scan_image(img, max_factor=1.0, min_factor=None):
         if len(text):
             result_array.append((r,text))
 
-    return result_array
+    return result_array, rect_array
 
 
 def draw_detected_text(img, result_array):
@@ -129,18 +129,28 @@ def draw_detected_text(img, result_array):
         draw.text([rect.x1,rect.y2], text, fill=(0,255,0))
 
 
+def draw_separate_candidates(img, rect_array):
+    draw = ImageDraw.Draw(img)
+
+    for rect in rect_array.separate_list:
+        draw.rectangle(rect.as_array(), outline=(128,0,0))
+
+
 def scan_image_file(file_path):
     img = Image.open(file_path)
-    result_array = scan_image(img, 0.75, 0.25)
+    result_array, rect_array = scan_image(img, 0.75, 0.25)
     result_img = img.convert('RGB')
+    draw_separate_candidates(result_img, rect_array)
     draw_detected_text(result_img, result_array)
+
     result_img.show()
 
 
 def test_image_file(file_path):
     img = Image.open(file_path)
-    result_array = scan_image(img, 0.75, 0.125)
+    result_array, rect_array = scan_image(img, 0.75, 0.125)
     result_img = img.convert('RGB')
+    draw_separate_candidates(result_img, rect_array)
     draw_detected_text(result_img, result_array)
     result_img.show()
     return result_array

@@ -4,6 +4,7 @@ class RectangleArray(object):
     """ An array of Rectangles used to compute the resulting bounding boxes. """
     def __init__(self, other_array = []):
         self.list = list(other_array)
+        self.separate_list = list(other_array)
 
 
     def add(self, rect):
@@ -12,6 +13,8 @@ class RectangleArray(object):
             rect: the rect to add to the array
         Returns:
             True if the rect was joined with an existing rect in the array"""
+
+        self.separate_list.append(rect)
 
         for r in self.list:
             if r.intersects(rect):
@@ -55,4 +58,3 @@ if __name__ == "__main__":
     a.add(Rectangle(8,0,10,1))
     a.finalize()
     print a.list
-    
