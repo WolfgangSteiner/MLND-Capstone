@@ -46,22 +46,25 @@ def create_detection_example(image_width, image_height, options={}):
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
 
-    if float(h) / image_height < 0.4:
+    if float(h) / image_height < 0.5:
         label = False
 
     while not is_word_start and random.random() > 0.5:
         text = char_source.random_char() + text
         (w2,h2) = font.calc_text_size(text)
         x -= (w2 - w)
+        w2 = w
 
     while not is_word_end and random.random() > 0.5:
         text = text + char_source.random_char()
 
+    text_width, text_height = font.calc_text_size(text)
+    text_size = Point(text_width, text_height)
 #    x += random.randint(-2,2)
-    x += random_offset(image_width)
-    y += random_offset(image_height)
-    char_rect = Rectangle.from_point_and_size(Point(x,y), Point(w,h))
-    center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.5 * canvas_rect.size())
+    x += random_offset(0.5 * image_width)
+    y += random_offset(0.5 * image_height)
+    char_rect = Rectangle.from_point_and_size(Point(x,y), text_size)
+    center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.125 * canvas_rect.size())
     y -= font.getoffset(text)[1]
 
     if not center_rect.intersects(char_rect):

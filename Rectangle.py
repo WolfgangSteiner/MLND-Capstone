@@ -71,6 +71,10 @@ class Rectangle(object):
         return r
 
 
+    def size(self):
+        return self.p2() - self.p1()
+
+
     def center(self):
         return 0.5 * (self.p1() + self.p2())
 
