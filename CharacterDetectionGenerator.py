@@ -11,8 +11,13 @@ num_char_rows = 32
 debug = True
 char_source = NumericCharacterSource()
 
+
+def random_offset(amp):
+    return (random.random() - 0.5) * 2.0 * amp
+
+
 def create_detection_example(image_width, image_height, options={}):
-    font = font_source.random_font({'min_size':0.25, 'max_size':1.5})
+    font = font_source.random_font({'min_size':0.125, 'max_size':3.0})
     canvas_width = image_width * 2
     canvas_height = image_height * 2
     min_color_delta = options.get('min_color_delta', 32)
@@ -21,27 +26,24 @@ def create_detection_example(image_width, image_height, options={}):
     text = char_source.random_char()
 
     image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
-    if random.random() < 0.25:
+    if random.random() < 0.4:
         image = crop(image)
         image = blur(image, options)
         image = add_noise(image, options)
         return image, 0
+    else:
+        label = True
 
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
-    label = False
     is_word_start = random.random() > 0.5
     is_word_end = random.random() > 0.5
 
     (w,h) = font.calc_text_size(text)
-    if random.random() < 0.5:
-        x = 0.5 * canvas_width
-    else:
-        x = 0.5 * (canvas_width - w)
-
-    if is_word_end and label == True:
-        x = 0.5 * canvas_width - w
-
+    x = 0.5 * (canvas_height - h)
     y = 0.5 * (canvas_height - h)
+
+    if float(h) / image_height < 0.25:
+        label = False
 
     while not is_word_start and random.random() > 0.5:
         text = char_source.random_char() + text
@@ -53,11 +55,10 @@ def create_detection_example(image_width, image_height, options={}):
 
 #    x += random.randint(-2,2)
     y += (random.random() - 0.5) * image_height * 0.25
-    y1 = y - 0.5 * image_height
-    y2 = y + h - 0.5 * image_height
     y -= font.getoffset(text)[1]
 
-    label = (y1 > 0) and (y1 < 0.25 * h) and (y2 > image_height * 0.75) and (y2 < image_height)
+    x += random_offset(image_width * 0.4)
+    y += random_offset(image_height * 0.4)
 
     draw = ImageDraw.Draw(char_image)
 
@@ -106,7 +107,8 @@ if __name__ == "__main__":
     overview_draw = ImageDraw.Draw(overview_image)
 
     options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'include_word_end_segmentation':True}
-    options['full_alphabet'] = True
+    options['full_alphabet'] = False
+    options['add_background_lines'] = False
 
     full_alphabet = options.get('full_alphabet', False)
     char_source = AlphaNumericCharacterSource() if full_alphabet else NumericCharacterSource()
