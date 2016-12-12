@@ -51,6 +51,18 @@ class Rectangle(object):
         return self.intersects_horizontally(other_rect) and self.intersects_vertically(other_rect)
 
 
+    def contains(self, r):
+        return self.x1 <= r.x1 and self.x2 >= r.x2 and self.y1 <= r.y1 and self.y2 >= r.y2
+
+
+    def contains_vertically(self, r):
+        return self.y1 <= r.y1 and self.y2 >= r.y2
+
+
+    def shrink(self, m):
+        return Rectangle(self.x1 + m, self.y1 + m, self.x2 - m, self.y2 - m)
+
+
     def union_with(self, other_rect):
         self.x1 = min(self.x1, other_rect.x1)
         self.x2 = max(self.x2, other_rect.x2)

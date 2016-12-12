@@ -64,10 +64,10 @@ def create_detection_example(image_width, image_height, options={}):
     x += random_offset(0.5 * image_width)
     y += random_offset(0.5 * image_height)
     char_rect = Rectangle.from_point_and_size(Point(x,y), text_size)
-    center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.125 * canvas_rect.size())
     y -= font.getoffset(text)[1]
 
-    if not center_rect.intersects(char_rect):
+    vertical_center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.75 * image_size)
+    if char_rect.y1 > vertical_center_rect.y1 or char_rect.y2 < vertical_center_rect.y2:
         label = False
 
     draw = ImageDraw.Draw(char_image)
