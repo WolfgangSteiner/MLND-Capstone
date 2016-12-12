@@ -131,9 +131,14 @@ def draw_detected_text(img, result_array):
 
 def draw_separate_candidates(img, rect_array):
     draw = ImageDraw.Draw(img)
-
     for rect in rect_array.separate_list:
         draw.rectangle(rect.as_array(), outline=(128,0,0))
+
+
+def draw_bounding_boxes(img, rect_array):
+    draw = ImageDraw.Draw(img)
+    for rect in rect_array.list:
+        draw.rectangle(rect.as_array(), outline=(0,0,255))
 
 
 def scan_image_file(file_path):
@@ -142,7 +147,6 @@ def scan_image_file(file_path):
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_detected_text(result_img, result_array)
-
     result_img.show()
 
 
@@ -151,6 +155,7 @@ def test_image_file(file_path):
     result_array, rect_array = scan_image(img, 0.75, 0.125)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
+    draw_bounding_boxes(result_img, rect_array)
     draw_detected_text(result_img, result_array)
     result_img.show()
     return result_array

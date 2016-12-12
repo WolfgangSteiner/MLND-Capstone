@@ -5,6 +5,8 @@ from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import random
 import numpy as np
+from Rectangle import Rectangle
+from Point import Point
 
 num_char_columns = 32
 num_char_rows = 32
@@ -18,8 +20,10 @@ def random_offset(amp):
 
 def create_detection_example(image_width, image_height, options={}):
     font = font_source.random_font({'min_size':0.125, 'max_size':3.0})
+    image_size = Point(image_width, image_height)
     canvas_width = image_width * 2
     canvas_height = image_height * 2
+    canvas_rect = Rectangle.from_point_and_size(Point(0,0), 2 * image_size)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
@@ -54,10 +58,14 @@ def create_detection_example(image_width, image_height, options={}):
         text = text + char_source.random_char()
 
 #    x += random.randint(-2,2)
+    x += random_offset(image_width)
+    y += random_offset(image_height)
+    char_rect = Rectangle.from_point_and_size(Point(x,y), Point(w,h))
+    center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.5 * canvas_rect.size())
     y -= font.getoffset(text)[1]
 
-    x += random_offset(image_width * 0.5)
-    y += random_offset(image_height * 0.5)
+    if not center_rect.intersects(char_rect):
+        label = False
 
     draw = ImageDraw.Draw(char_image)
 
