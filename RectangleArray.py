@@ -52,5 +52,7 @@ if __name__ == "__main__":
     print a.list
     a.add(Rectangle(2.5,0,4.5,1))
     print a.list
+    a.add(Rectangle(8,0,10,1))
     a.finalize()
     print a.list
+    

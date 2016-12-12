@@ -13,10 +13,11 @@ from Point import Point
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection008.hdf5")
+char_detector = load_model("detection012.hdf5")
 
 detector_size = Point(32,32)
-detector_overlap = 4
+detector_overlap = 2
+
 
 def rescale_image(img, scale_factor):
     (w,h) = img.size
@@ -39,8 +40,8 @@ def prepare_image_for_classification(image):
 
 
 def check_text(img, pos):
-    window_rect = make_rect(pos, detector_size)
-    window = img.crop(window_rect)
+    window_rect = Rectangle.from_point_and_size(pos, detector_size)
+    window = img.crop(window_rect.as_array)
     window_data = prepare_image_for_classification(window)
     is_text = char_detector.predict(window_data)[0] > 0.95
     return is_text, window_rect
@@ -90,8 +91,8 @@ def scan_image_at_scale(img, scale_factor, rect_array):
 
 
 def infer_text(img, rect):
-    text_line_img = img.crop(rect.x1(), rect.y1(), rect.x2(), rect.y2())
-    text_line_img = rescale_image_to_height(detector_size.y)
+    text_line_img = img.crop(rect.as_array())
+    text_line_img = rescale_image_to_height(text_line_img, detector_size.y)
     text = predict_word(text_line_img)
     return text
 
@@ -109,24 +110,23 @@ def scan_image(img, max_factor=1.0, min_factor=None):
 
     while img.size[0] * factor > min_size.x and img.size[1] * factor > min_size.y:
         scan_image_at_scale(img, factor, rect_array)
-        factor *= 0.9
+        factor *= 0.75
 
     rect_array.finalize()
     for r in rect_array.list:
         text = infer_text(img, r)
         if len(text):
-            result_array
-            rect_array.append((r,text))
+            result_array.append((r,text))
 
-    return rect_array
+    return result_array
 
 
 def draw_detected_text(img, result_array):
     draw = ImageDraw.Draw(img)
 
     for rect, text in result_array:
-        draw.rectangle(rect, outline=(0,255,0))
-        draw.text([rect[0],rect[3]], text, fill=(0,255,0))
+        draw.rectangle(rect.as_array(), outline=(0,255,0))
+        draw.text([rect.x1,rect.y2], text, fill=(0,255,0))
 
 
 def scan_image_file(file_path):
@@ -139,7 +139,7 @@ def scan_image_file(file_path):
 
 def test_image_file(file_path):
     img = Image.open(file_path)
-    result_array = scan_image(img, 0.75, 0.025)
+    result_array = scan_image(img, 0.75, 0.125)
     result_img = img.convert('RGB')
     draw_detected_text(result_img, result_array)
     result_img.show()
