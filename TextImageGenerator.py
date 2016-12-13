@@ -16,6 +16,11 @@ num_char_rows = 32
 debug = True
 char_source = NumericCharacterSource()
 
+
+def random_offset(amp):
+    return (random.random() - 0.5) * 2.0 * amp
+
+
 def create_text_image(image_width = 128, image_height = 32, options={}):
     canvas_width = 1920
     canvas_height = 1080
@@ -29,16 +34,22 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""
+    margin = 16
+
     for i in range(0,random.randint(1,10)):
-        text += char_source.random_char()
+        new_text = text + char_source.random_char()
+        (w,h) = font.calc_text_size(new_text)
+        if w >= canvas_width - 2.0 * margin:
+            break
+        text = new_text
 
     (w,h) = font.calc_text_size(text)
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
-    margin = random.random() * 16
-    x += (random.random() - 0.5) * 0.5 * (canvas_width - w)
-    y += (random.random() - 0.5) * (canvas_height - h)
+    x += random_offset(0.5 * (canvas_width - w) - margin)
+    y += random_offset(0.5 * (canvas_height - h) - margin)
     y -= font.getoffset(text)[1]
+
     draw = ImageDraw.Draw(char_image)
 
     if random.random() > 0.5:
