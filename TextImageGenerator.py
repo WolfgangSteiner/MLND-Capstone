@@ -23,8 +23,8 @@ def random_offset(amp):
 
 
 def create_text_image(image_width = 128, image_height = 32, options={}):
-    canvas_width = 1920
-    canvas_height = 1080
+    canvas_width = 640
+    canvas_height = 480
     font=font_source.random_font(options)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
@@ -35,7 +35,7 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""
-    margin = 16
+    margin = 4
 
     for i in range(0,random.randint(1,10)):
         new_text = text + char_source.random_char()
@@ -109,6 +109,7 @@ if __name__ == "__main__":
     image_height = 32
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
     options['max_size'] = 8.0
+    options['min_size'] = 0.25
 
     if args.save:
         labels = {}
