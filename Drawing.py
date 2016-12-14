@@ -11,10 +11,10 @@ def random_blur(img, min_blur, max_blur):
     return blur(img, random.uniform(min_blur, max_blur))
 
 
-def create_noise_background(size, background_color, noise_amount, blur_radius):
-    wn = int(size.x / random.uniform(1.0, 32.0))
-    hn = int(size.y / random.uniform(1.0, 32.0))
-    noise = (np.random.rand(hn,wn) - 0.5) * noise_amount + background_color
+def create_noise_background(size, min_color, max_color, blur_radius, min_factor=1.0, max_factor=32.0):
+    wn = int(size.x / random.uniform(min_factor, max_factor))
+    hn = int(size.y / random.uniform(min_factor, max_factor))
+    noise = (np.random.rand(hn,wn) - 0.5) * (max_color - min_color) + min_color
     noise = np.clip(noise, 0.0, 255.0)
     img = Image.fromarray(noise).convert('RGBA')
     img = blur(img, blur_radius)
