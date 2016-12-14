@@ -109,7 +109,7 @@ if __name__ == "__main__":
     image_height = 32
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
     options['max_size'] = 8.0
-    options['min_size'] = 0.25
+    options['min_size'] = 0.75
 
     if args.save:
         labels = {}
