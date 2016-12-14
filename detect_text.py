@@ -9,28 +9,33 @@ import argparse
 from RectangleArray import RectangleArray
 from Rectangle import Rectangle
 from Point import Point
+from timeit import default_timer as timer
 
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection012.hdf5")
+char_detector = load_model("detection012b.hdf5")
 
 detector_size = Point(32,32)
 detector_overlap = 2
+detector_scaling_factor = 0.75
+detector_scaling_min = 0.125
+detector_scaling_max = 2.0
+text_detector_threshold = 0.6
 
 
 def rescale_image(img, scale_factor):
     (w,h) = img.size
     new_w = quantize(w * scale_factor,detector_size.x)
     new_h = quantize(h * scale_factor,detector_size.y)
-    return img.resize((new_w, new_h), resample=Image.BICUBIC), Point(float(new_w) / w, float(new_h) / h)
+    return img.resize((new_w, new_h), resample=Image.BILINEAR), Point(float(new_w) / w, float(new_h) / h)
 
 
 def rescale_image_to_height(img, height):
     (w,h) = img.size
     factor = float(height) / h
-    new_w = int(w * factor) if factor < 0.75 or factor > 1.25 else w
-    return img.resize((new_w, h), resample=Image.BICUBIC)
+    new_w = int(w * factor)
+    return img.resize((new_w, height), resample=Image.BILINEAR)
 
 
 def prepare_image_for_classification(image):
@@ -43,51 +48,52 @@ def check_text(img, pos):
     window_rect = Rectangle.from_point_and_size(pos, detector_size)
     window = img.crop(window_rect.as_array)
     window_data = prepare_image_for_classification(window)
-    is_text = char_detector.predict(window_data)[0] > 0.95
+    is_text = char_detector.predict(window_data)[0] > text_detector_threshold
     return is_text, window_rect
 
 
 def detect_text(img):
     y = 0
-    x = 0
     (w,h) = img.size
+    delta_x = detector_size.x / detector_overlap
+    delta_y = detector_size.y / detector_overlap
+
     data = []
-    while y < h:
+    while y <= h - detector_size.y:
         x = 0
-        while x < w:
+        while x <= w - detector_size.x:
             window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
             window = img.crop(window_rect.as_array())
             window_data = prepare_image_for_classification(window)
             data.append(window_data.reshape(detector_size.y,detector_size.x,1))
-            x += detector_size.x / detector_overlap
-        y += detector_size.y / detector_overlap
+            x += delta_x
+        y += delta_y
 
     result = char_detector.predict(np.array(data))
     return result
 
 
 def scan_image_at_scale(img, scale_factor, rect_array):
-    img, scale_factors = rescale_image(img, scale_factor)
-    (w,h) = img.size
+    scaled_img, scale_factors = rescale_image(img, scale_factor)
+    (w,h) = scaled_img.size
     y = 0
+    delta_x = detector_size.x / detector_overlap
+    delta_y = detector_size.y / detector_overlap
     result_array = []
-    is_text_vector = detect_text(img)
+    is_text_vector = detect_text(scaled_img)
     i = 0
 
-    while y < h:
-        x1 = 0
-        x2 = 0
-        is_in_word = False
+    while y <= h - detector_size.y:
         x = 0
-        while x < w:
+        while x <= w - detector_size.x:
             window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
-            is_text = is_text_vector[i] > 0.95
+            is_text = is_text_vector[i] > text_detector_threshold
             if is_text:
                 rect_array.add(window_rect.unscale(scale_factors))
 
-            x += detector_size.x / detector_overlap
+            x += delta_x
             i += 1
-        y += detector_size.y / detector_overlap
+        y += delta_y
 
 
 def infer_text(img, rect):
@@ -110,7 +116,7 @@ def scan_image(img, max_factor=1.0, min_factor=None):
 
     while img.size[0] * factor > min_size.x and img.size[1] * factor > min_size.y:
         scan_image_at_scale(img, factor, rect_array)
-        factor *= 0.75
+        factor *= detector_scaling_factor
 
     rect_array.finalize()
     for r in rect_array.list:
@@ -123,7 +129,6 @@ def scan_image(img, max_factor=1.0, min_factor=None):
 
 def draw_detected_text(img, result_array):
     draw = ImageDraw.Draw(img)
-
     for rect, text in result_array:
         draw.rectangle(rect.as_array(), outline=(0,255,0))
         draw.text([rect.x1,rect.y2], text, fill=(0,255,0))
@@ -143,7 +148,7 @@ def draw_bounding_boxes(img, rect_array):
 
 def scan_image_file(file_path):
     img = Image.open(file_path)
-    result_array, rect_array = scan_image(img, 0.75, 0.25)
+    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_detected_text(result_img, result_array)
@@ -152,12 +157,12 @@ def scan_image_file(file_path):
 
 def test_image_file(file_path):
     img = Image.open(file_path)
-    result_array, rect_array = scan_image(img, 0.75, 0.125)
+    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_bounding_boxes(result_img, rect_array)
     draw_detected_text(result_img, result_array)
-    result_img.show()
+    result_img.save("result.png")
     return result_array
 
 
@@ -176,6 +181,9 @@ if __name__ == "__main__":
     n = 0
     true_positives = 0
 
+
+    start_time = timer()
+    
     for id, label in labels.iteritems():
         result_array = test_image_file(args.data_dir + "/" + id + ".png")
 
@@ -188,8 +196,13 @@ if __name__ == "__main__":
         if predicted_label == label:
             true_positives += 1
         n += 1
+        if n > args.n:
+            break
 
         accuracy = float(true_positives)/n
-        print "%d/%d: %s -> %s accuracy = %.2f" % (n, len(labels), label, predicted_text, accuracy)
-
+        print "%d/%d: %s %s -> %s accuracy = %.4f" % (n, min(len(labels),args.n), id[0:6], label, predicted_text, accuracy)
     print
+
+    end_time = timer()
+
+    print "Finished int %fs" % (end_time - start_time)
