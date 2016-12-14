@@ -32,7 +32,7 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
     text = char_source.random_char()
 
 
-    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5))
+    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=64)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""

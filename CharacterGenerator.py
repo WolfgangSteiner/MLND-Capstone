@@ -12,9 +12,13 @@ import string
 from keras.utils.np_utils import to_categorical
 from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 from FontSource import FontSource
+import Drawing
+from Point import Point
+
 
 char_height = 32
 char_width = 32
+char_size = Point(char_height, char_width)
 canvas_width = 2 * char_width
 canvas_height = 2 * char_height
 num_char_columns = 16
@@ -181,12 +185,14 @@ def create_char(char_width, char_height, font, char, options={}):
     resize_char = options.get('resize_char', False)
     canvas_width = char_width * 2
     canvas_height = char_height * 2
+    canvas_size = 2 * char_size
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char
 
-    image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
+    noise_amount = abs(background_color - text_color) - min_color_delta
+    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=8)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     (w,h) = font.calc_text_size(text)
