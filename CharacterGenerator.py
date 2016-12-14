@@ -65,6 +65,16 @@ def random_background_color(text_color, min_color_delta=32):
             return background_color
 
 
+def random_line_color(text_color, background_color, min_color_delta=32):
+    while True:
+        line_color = random.randint(0,255)
+        # find a text color that has a minimum amount of contrast against background_color:
+        if abs(text_color - background_color) > min_color_delta:
+            return background_color
+
+
+
+
 def draw_line(draw, p1, p2, color, width, alpha=255):
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=get_color(color, alpha=alpha), width=width)
 
@@ -73,7 +83,7 @@ def draw_text(draw, x, y, text, font, color):
     draw.text((x,y), text, font=font.image_font, fill=get_color(color))
 
 
-def draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=4):
+def draw_random_line(canvas_width, canvas_height, draw, text_color, background_color, min_color_delta, oversampling=4):
     p1 = np.random.random(2) * canvas_width / 2 * oversampling
     angle = random.random() * math.pi
     length = random.random() * canvas_width / 2 * oversampling
@@ -84,9 +94,9 @@ def draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_de
     draw_line(draw, p1, p2, color, width, alpha=255)
 
 
-def add_random_lines(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=4):
+def add_random_lines(canvas_width, canvas_height, draw, text_color, background_color, min_color_delta, oversampling=4):
     while random.random() < 0.95:
-        draw_random_line(canvas_width, canvas_height, draw, text_color, min_color_delta, oversampling=oversampling)
+        draw_random_line(canvas_width, canvas_height, draw, text_color, background_color, min_color_delta, oversampling=oversampling)
 
 
 def add_noise(image, options={}):
@@ -108,7 +118,7 @@ def create_char_background(width, height, text_color, background_color, min_colo
         draw = ImageDraw.Draw(image, 'RGBA')
         add_random_lines(width, height, draw, text_color, min_color_delta, oversampling)
         image = image.resize((width, height), resample=Image.LANCZOS)
-        image = blur(image, {'min_blur':0.125, 'max_blur':0.5})
+        image = blur(image, {'min_blur':0.5, 'max_blur':4.0})
     else:
         image = Image.new('RGBA', (width, height), get_color(background_color))
 
@@ -234,8 +244,8 @@ def CharacterGenerator(batchsize, options={}):
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
     else:
-        char_source = NumericCharacterSource()        
-        
+        char_source = NumericCharacterSource()
+
     while True:
         x = []
         y = []

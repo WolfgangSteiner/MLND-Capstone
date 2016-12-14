@@ -3,6 +3,7 @@ from CharacterGenerator import random_background_color, draw_text
 from CharacterGenerator import add_outline, add_shadow, font_source
 from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
+from Utils import mkdir
 import random
 import numpy as np
 import uuid
@@ -86,15 +87,6 @@ def create_char_sequence(image_width = 128, image_height = 32, options={}):
 #         yield np.array(x),y
 
 
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
@@ -113,7 +105,7 @@ if __name__ == "__main__":
 
     if args.save:
         labels = {}
-        mkdir_p(args.data_dir)
+        mkdir(args.data_dir)
         for i in range(args.n):
             sys.stdout.write("\r%d" % (i+1))
             sys.stdout.flush()

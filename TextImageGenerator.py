@@ -11,6 +11,9 @@ import pickle
 from CharacterSource import NumericCharacterSource
 from FontSource import FontSource
 from Utils import mkdir
+from MathUtils import random_offset
+from Point import Point
+import Drawing
 
 num_char_columns = 2
 num_char_rows = 32
@@ -18,20 +21,17 @@ debug = True
 char_source = NumericCharacterSource()
 
 
-def random_offset(amp):
-    return (random.random() - 0.5) * 2.0 * amp
-
-
 def create_text_image(image_width = 128, image_height = 32, options={}):
     canvas_width = 640
     canvas_height = 480
+    canvas_size = Point(canvas_width, canvas_height)
     font=font_source.random_font(options)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
 
-    image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
+    image = Drawing.create_noise_background(canvas_size, background_color, abs(background_color - text_color) - min_color_delta, random.uniform(0.5,1.5))
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""

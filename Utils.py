@@ -1,4 +1,6 @@
 import os
+import sys
+import errno
 
 def mkdir(path):
     try:
