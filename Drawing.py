@@ -19,11 +19,10 @@ def create_noise_background(size, text_color, background_color, min_color_delta,
         min_color = text_color + min_color_delta
         max_color = 255
 
-    background_color = random.uniform(min_color, max_color)
-    noise_amp = min(abs(max_color - background_color), abs(background_color - min_color))
+    noise_amp = min(abs(max_color - background_color), abs(background_color - min_color)) * random.random()
 
-    wn = int(size.x / random.uniform(min_factor, max_factor))
-    hn = int(size.y / random.uniform(min_factor, max_factor))
+    wn = int(size.x / random.uniform(min_factor, min(max_factor, size.x)))
+    hn = int(size.y / random.uniform(min_factor, min(max_factor, size.y)))
     noise = np.random.rand(hn,wn) * noise_amp + background_color
     noise = np.clip(noise, 0.0, 255.0)
     img = Image.fromarray(noise).convert('RGBA')

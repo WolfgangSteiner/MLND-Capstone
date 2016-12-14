@@ -7,6 +7,7 @@ import random
 import numpy as np
 from Rectangle import Rectangle
 from Point import Point
+import Drawing
 
 num_char_columns = 32
 num_char_rows = 32
@@ -21,6 +22,7 @@ def random_offset(amp):
 def create_detection_example(image_width, image_height, options={}):
     font = font_source.random_font({'min_size':0.125, 'max_size':3.0})
     image_size = Point(image_width, image_height)
+    canvas_size = 2 * image_size
     canvas_width = image_width * 2
     canvas_height = image_height * 2
     canvas_rect = Rectangle.from_point_and_size(Point(0,0), 2 * image_size)
@@ -29,7 +31,7 @@ def create_detection_example(image_width, image_height, options={}):
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
 
-    image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
+    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=8)
     if random.random() < 0.4:
         image = crop(image)
         image = blur(image, options)
