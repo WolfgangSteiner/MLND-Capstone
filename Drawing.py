@@ -11,6 +11,10 @@ def random_blur(img, min_blur, max_blur):
     return blur(img, random.uniform(min_blur, max_blur))
 
 
+def scale_image(img, factor):
+    return img.resize((int(img.size[0] * factor), int(img.size[1] * factor)), Image.LANCZOS)
+
+
 def create_noise_background(size, text_color, background_color, min_color_delta, blur_radius, min_factor=1.0, max_factor=32.0):
     if background_color < text_color:
         min_color = 0

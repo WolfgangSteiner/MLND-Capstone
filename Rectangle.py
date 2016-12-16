@@ -51,6 +51,13 @@ class Rectangle(object):
         return self.intersects_horizontally(other_rect) and self.intersects_vertically(other_rect)
 
 
+    def calc_overlap(self, other_rect):
+        if not self.intersects(other_rect) or self.area() == 0.0:
+            return 0.0
+        else:
+            return self.intersect(other_rect).area() / self.area()
+
+
     def contains(self, r):
         return self.x1 <= r.x1 and self.x2 >= r.x2 and self.y1 <= r.y1 and self.y2 >= r.y2
 
@@ -71,10 +78,13 @@ class Rectangle(object):
 
 
     def intersect_with(self, other_rect):
-        self.x1 = min(self.x1, other_rect.x1)
-        self.x2 = max(self.x2, other_rect.x2)
-        self.y1 = min(self.y1, other_rect.y1)
-        self.y2 = max(self.y2, other_rect.y2)
+        if self.intersects(other_rect):
+            self.x1 = max(self.x1, other_rect.x1)
+            self.x2 = min(self.x2, other_rect.x2)
+            self.y1 = max(self.y1, other_rect.y1)
+            self.y2 = min(self.y2, other_rect.y2)
+        else:
+            self.x1 = self.x2 = self.y1 = self.y2 = 0
 
 
     def union(self, other_rect):
@@ -83,12 +93,39 @@ class Rectangle(object):
         return r
 
 
+    def intersect(self, other_rect):
+        r = Rectangle(self.x1,self.y1,self.x2,self.y2)
+        r.intersect_with(other_rect)
+        return r
+
+
     def size(self):
         return self.p2() - self.p1()
 
 
+    def width(self):
+        return self.size().x
+
+
+    def height(self):
+        return self.size().y
+
+
     def center(self):
         return 0.5 * (self.p1() + self.p2())
+
+
+    def area(self):
+        s = self.size()
+        return s.x * s.y
+
+
+    def __imul__(self, a):
+        self.x1 *= a
+        self.x2 *= a
+        self.y1 *= a
+        self.y2 *= a
+        return self
 
 
     def __repr__(self):

@@ -391,6 +391,48 @@ class Training(object):
                 sample_weight=None)
 
 
+    def train_svhn_detection(self, options={}):
+        if "--continue" in argv:
+            print("Continuing training...")
+            file_stem = argv[0].split(".")[0]
+            self.model = load_model(file_stem + ".hdf5")
+            res = pd.read_csv(file_stem + ".log")
+            num_trained_epochs = len(res)
+            last_lr = res['lr'][num_trained_epochs - 1]
+            self.csv_logger.append = True
+            epoch_offset = num_trained_epochs
+        else:
+            self.compile(loss_function='binary_crossentropy')
+
+        from SvhnGenerator import SvhnDetectionGenerator
+        num_epochs = options.get('num_epochs', 1000)
+        num_training = options.get('num_training', None)
+        num_validation = options.get('num_validation', 2048)
+        X_val, y_val = SvhnDetectionGenerator(num_validation, options).next()
+        generator = SvhnDetectionGenerator(self.batch_size, options)
+
+        if num_training is None:
+            self.model.fit_generator(
+                generator, 16384, num_epochs,
+                validation_data = (X_val, y_val),
+                nb_val_samples = None,
+                callbacks = self.callbacks(options),
+                max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+        else:
+            X_train, y_train = SvhnDetectionGenerator(num_training, options).next()
+            self.model.fit(
+                X_train, y_train,
+                batch_size=self.batch_size,
+                nb_epoch=num_epochs,
+                verbose=1,
+                callbacks = self.callbacks(options),
+                validation_split=0.0,
+                validation_data=(X_val,y_val),
+                shuffle=True,
+                class_weight=None,
+                sample_weight=None)
+
+
     def train_svhn(self, options={}):
         self.compile()
         X_train, y_train, X_val, y_val = prepare_svhn(options)
