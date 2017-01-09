@@ -39,7 +39,7 @@ def does_rect_intersect_char(rect, bbox_array, scale_factor):
     for bbox in bbox_array:
         r = Rectangle.from_point_and_size(Point(bbox[0],bbox[1]), Point(bbox[2],bbox[3]))
         r *= scale_factor
-        if r.calc_overlap(rect) > 0.5:
+        if r.calc_overlap(rect) > 0.85:
             return True
 
     return False
