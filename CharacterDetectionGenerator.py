@@ -105,7 +105,7 @@ def CharacterDetectionGenerator(batchsize, options={}):
         y = []
         for i in range(0,batchsize):
             image, label = create_detection_example(image_width, image_height, options)
-            image_data = np.array(image).astype('float32')
+            image_data = np.array(image).astype('float32')/255.0
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
 

@@ -43,7 +43,7 @@ def check_segmentation(img):
     data = []
     while x < w - segmentation_width:
         window_image = img.crop((x,0,x+segmentation_width,segmentation_height))
-        window_data = np.array(window_image).astype('float32')
+        window_data = np.array(window_image).astype('float32')/255.0
         window_data = window_data.reshape(segmentation_height,segmentation_width,1)
         data.append(window_data)
         x += 1

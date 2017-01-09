@@ -26,7 +26,7 @@ detector_overlap = 4
 detector_scaling_factor = 0.5
 detector_scaling_min = 0.5
 detector_scaling_max = 2.0
-text_detector_threshold = 0.75
+text_detector_threshold = 0.995
 
 
 def rescale_image(img, scale_factor):
@@ -45,7 +45,7 @@ def rescale_image_to_height(img, height):
 
 def prepare_image_for_classification(image):
     w,h = image.size
-    image_data = np.array(image).astype('float32')
+    image_data = np.array(image).astype('float32')/255.0
 #    print "image size: %d, %d" % (w,h), image_data.shape
     return image_data.reshape(h,w,1)
 

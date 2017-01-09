@@ -94,8 +94,8 @@ def CharacterSegmentationGenerator(batchsize, options={}):
         for i in range(0,batchsize):
             font = font_source.random_font(options)
             is_char_border = int(random.random() > 0.5)
-            image, label = create_segmentation_example(image_width, image_height, font_tuple, options)
-            image_data = np.array(image).astype('float32')
+            image, label = create_segmentation_example(image_width, image_height, font, options)
+            image_data = np.array(image).astype('float32')/255.0
 
             # if mean == None:
             #     mean = np.mean(image_data, axis=(0,1))
@@ -112,7 +112,7 @@ def CharacterSegmentationGenerator(batchsize, options={}):
 
 
 if __name__ == "__main__":
-    image_width = 8
+    image_width = 16
     image_height = 32
     overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
