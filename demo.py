@@ -5,6 +5,7 @@ from keras.models import load_model
 from time import sleep
 from detect_text import scan_image
 import cProfile
+from Drawing import scale_image
 
 pr = cProfile.Profile()
 
@@ -32,25 +33,29 @@ def preprocess_image(image):
     return image_data, clip_rect
 
 
-def draw_rect(cv_img, rect):
-    p1 = (int(rect[0]),int(rect[1]))
-    p2 = (int(rect[2]),int(rect[3]))
-    color_green = (0,255,0)
-    cv2.rectangle(cv_img, p1, p2, color=color_green, thickness=1)
+def draw_rect(cv_img, r, color):
+    p1 = (int(r.x1),int(r.y1))
+    p2 = (int(r.x2),int(r.y2))
+    cv2.rectangle(cv_img, p1, p2, color=color, thickness=1)
 
 
-def draw_answer(cv_img, text, rect):
+def draw_answer(cv_img, text, r):
     font = cv2.FONT_HERSHEY_SIMPLEX
     color_green = (0,255,0)
-    draw_rect(cv_img, rect)
-    x = int(rect[0])
-    y = int(rect[3])
+    draw_rect(cv_img, r, color_green)
+    x = int(r.x1)
+    y = int(r.y2)
     cv2.putText(cv_img, text, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
-def draw_answers(cv_img, answers):
-    for rect,text in answers:
-        draw_answer(cv_img, text,rect)
+def draw_detection(cv_img, rect_array):
+    for r in rect_array.separate_list:
+        draw_rect(cv_img, r, (0,0,128))
+
+
+def draw_answers(cv_img, result_array):
+    for rect,text in result_array:
+        draw_answer(cv_img, text, rect)
 
 
 def draw_probability(cv_img, p):
@@ -69,18 +74,21 @@ def draw_probability(cv_img, p):
 cap = cv2.VideoCapture(0)
 #cap.set(cv2.CAP_PROP_FPS, 2)
 #pr.enable()
-
+is_first = True
 while(True):
-    # Capture frame-by-frame
     ret, frame = cap.read()
-
-    # Our operations on the frame come here
-
+    frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     image = Image.fromarray(gray)
-    #image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
-    result_array = scan_image(image, 1/2.0, 1/32.0)
-    draw_answers(frame, result_array)
+    if is_first:
+        print "Image size: %d, %d" % (image.size[0],image.size[1])
+        is_first = False
+    image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
+
+    for scale in (2.0, 1.0, 0.25):
+        result_array, rect_array = scan_image(image, scale, scale)
+        draw_detection(frame, rect_array)
+        draw_answers(frame, result_array)
 
     # Display the resulting frame
     cv2.imshow('frame', frame)
