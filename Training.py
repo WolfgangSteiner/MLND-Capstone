@@ -1,6 +1,7 @@
 from CharacterGenerator import CharacterGenerator
 from CharacterSegmentationGenerator import CharacterSegmentationGenerator
 from CharacterDetectionGenerator import CharacterDetectionGenerator
+from TextDetectionGenerator import TextDetectionGenerator
 from keras.layers import Input, merge
 from keras.layers import Dense, Dropout, Convolution2D, Flatten, Reshape, Activation
 from keras.layers import MaxPooling2D, AveragePooling2D
@@ -29,8 +30,8 @@ def regularizer(wreg):
         return None
 
 
-def create_conv_layer(depth, filter_size, input, wreg=0.01):
-    t = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(wreg), init='glorot_normal')(input)
+def create_conv_layer(depth, filter_size, input, wreg=0.01, subsample=(1,1)):
+    t = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(wreg), init='glorot_normal', subsample=subsample)(input)
     return Activation('relu')(t)
 
 
@@ -192,14 +193,19 @@ class Training(object):
 
 
     def compile(self, loss_function='categorical_crossentropy'):
+        if loss_function == 'mean_squared_error':
+            metrics = ['mean_squared_error']
+        else:
+            metrics=['accuracy']
+
         self.model.compile(
             optimizer=Adam(self.lr),
             loss=loss_function,
-            metrics=['accuracy'])
+            metrics=metrics)
 
 
-    def conv(self, depth, filter_size=3):
-        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(self.wreg), input_shape=self.current_shape)
+    def conv(self, depth, filter_size=3, subsample=(1,1)):
+        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(self.wreg), input_shape=self.current_shape, subsample=subsample)
         self.is_first_layer = False
         self.model.add(conv_layer)
         if self.use_batchnorm:
@@ -247,6 +253,10 @@ class Training(object):
 
     def binary_classifier(self):
         self.model.add(Dense(1, init=self.winit))
+        self.model.add(Activation('sigmoid'))
+
+
+    def sigmoid(self):
         self.model.add(Activation('sigmoid'))
 
 
@@ -389,6 +399,49 @@ class Training(object):
                 shuffle=True,
                 class_weight=None,
                 sample_weight=None)
+
+
+    def train_detection_generator_new(self, options={}):
+        if "--continue" in argv:
+            print("Continuing training...")
+            file_stem = argv[0].split(".")[0]
+            self.model = load_model(file_stem + ".hdf5")
+            res = pd.read_csv(file_stem + ".log")
+            num_trained_epochs = len(res)
+            last_lr = res['lr'][num_trained_epochs - 1]
+            self.csv_logger.append = True
+            epoch_offset = num_trained_epochs
+        else:
+            self.compile(loss_function='mean_squared_error')
+
+        num_epochs = options.get('num_epochs', 1000)
+        num_training = options.get('num_training', None)
+        num_validation = options.get('num_validation', 2048)
+        X_val, y_val = TextDetectionGenerator(num_validation, options).next()
+        generator = TextDetectionGenerator(self.batch_size, options)
+
+        if num_training is None:
+            self.model.fit_generator(
+                generator, 16384, num_epochs,
+                validation_data = (X_val, y_val),
+                nb_val_samples = None,
+                callbacks = self.callbacks(options),
+                max_q_size=16, nb_worker=8, pickle_safe=True)  # starts training
+        else:
+            X_train, y_train = TextDetectionGenerator(num_training, options).next()
+            self.model.fit(
+                X_train, y_train,
+                batch_size=self.batch_size,
+                nb_epoch=num_epochs,
+                verbose=1,
+                callbacks = self.callbacks(options),
+                validation_split=0.0,
+                validation_data=(X_val,y_val),
+                shuffle=True,
+                class_weight=None,
+                sample_weight=None)
+
+
 
 
     def train_svhn_detection(self, options={}):
