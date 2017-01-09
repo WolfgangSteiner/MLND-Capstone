@@ -2,9 +2,10 @@ from Rectangle import Rectangle
 
 class RectangleArray(object):
     """ An array of Rectangles used to compute the resulting bounding boxes. """
-    def __init__(self, other_array = []):
+    def __init__(self, other_array = [], overlap=0.0):
         self.list = list(other_array)
         self.separate_list = list(other_array)
+        self.overlap = overlap
 
 
     def add(self, rect):
@@ -17,7 +18,7 @@ class RectangleArray(object):
         self.separate_list.append(rect)
 
         for r in self.list:
-            if r.intersects(rect):
+            if r.calc_overlap(rect) > self.overlap:
                 r.union_with(rect)
                 return True
 
@@ -28,12 +29,12 @@ class RectangleArray(object):
     def finalize(self):
         """Finalize the rectangle calculation."""
 
-        result = RectangleArray(self.list)
+        result = RectangleArray(self.list, self.overlap)
         current_list = list(self.list)
 
         while True:
             did_join = False
-            result = RectangleArray()
+            result = RectangleArray(overlap=self.overlap)
             for r in current_list:
                 did_join |= result.add(r)
 
@@ -43,6 +44,10 @@ class RectangleArray(object):
                 break
 
         self.list = result.list
+
+
+    def __iter__(self):
+        return self.list.__iter__()
 
 
 if __name__ == "__main__":
