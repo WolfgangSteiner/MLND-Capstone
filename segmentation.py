@@ -4,12 +4,13 @@ import pickle, sys, argparse
 from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import cProfile
+from MathUtils import levenshtein_distance
 #pr = cProfile.Profile()
 #pr.enable()
 
-image_width = 1024
+image_width = 1200
 image_height = 32
-num_char_columns = 2
+num_char_columns = 4
 num_char_rows = 32
 segmentation_width = 16
 segmentation_height = 32
@@ -123,7 +124,7 @@ def draw_answer(img, text, predicted_text):
 
 
 def classify_character(img, x1, x2):
-    char_image = img.crop((x1,0,x2,32)).resize((32,32), resample=Image.BICUBIC)
+    char_image = img.crop((x1,0,x2,32)).resize((32,32), resample=Image.BILINEAR)
     char_data = prepare_image_for_classification(char_image)
     ans_vector = character_classifier.predict(char_data)[0]
     ans = ans_vector.argmax()
@@ -154,8 +155,8 @@ def preprocess_image(image):
     bottom = (height + min_dim)/2
     clip_rect = (left, top, right, bottom)
 
-    image = image.crop(clip_rect).resize((char_size, char_size), Image.LANCZOS)
-    image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
+    image = image.crop(clip_rect).resize((char_size, char_size), Image.BILINEAR)
+#    image = image.filter(ImageFilter.GaussianBlur(radius=1.0))
 
     image_data = np.array(image).astype('float32')
     m = np.mean(image_data, axis=(0,1))
@@ -167,7 +168,7 @@ def preprocess_image(image):
 
 
 def draw_chars(img, seg_array):
-    result = Image.new("RGB", (image_width/2, image_height), 0)
+    result = Image.new("RGB", (image_width/2, image_height), (255,255,255))
     draw = ImageDraw.Draw(result)
     xi = 0
     char_width = 32
@@ -177,7 +178,7 @@ def draw_chars(img, seg_array):
         x1 = seg_array[i]
         x2 = seg_array[i+1]
         char_image = img.crop((x1,0,x2,char_height))
-        char_image = char_image.resize((char_width,char_height),resample=Image.BICUBIC)
+        char_image = char_image.resize((char_width,char_height),resample=Image.BILINEAR)
         result.paste(char_image, (xi, 0))
         draw.line(((xi,0),(xi,32)), fill=(0,255,0))
         xi += char_width
@@ -196,13 +197,16 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     correct_predictions = 0
     file = open(data_dir + '/' + 'labels.pickle', 'rb')
     labels = pickle.load(file)
+    num_digits = 0
+    num_correct_digits = 0
 
     if visualize:
         num_examples = min(max_num, len(labels))
-        num_char_rows = num_examples / 2 + num_examples % 2
-        overview_image = Image.new("RGB", (image_width, 2 * image_height * num_char_rows), (0,0,0))
+        num_char_rows = num_examples / num_char_columns + num_examples % num_char_columns
+        overview_image = Image.new("RGB", (image_width, 2 * image_height * num_char_rows), (255,255,255))
         overview_draw = ImageDraw.Draw(overview_image)
 
+    num_examples = min(len(labels),max_num)
 
     for id,text in labels.iteritems():
         img = Image.open(data_dir + '/' + id + ".png")
@@ -211,8 +215,8 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
         predicted_text = classify_characters(img, seg_array)
 
         if visualize:
-            x = (n % 2) * image_width / 2
-            y = (n / 2) * image_height * 2
+            x = (n % num_char_columns) * image_width / num_char_columns
+            y = (n / num_char_columns) * image_height * 2
             img = img.convert(mode='RGB')
             char_image = draw_chars(img, seg_array)
             draw_score(img, score_array)
@@ -221,11 +225,13 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
             overview_image.paste(img, (x, y))
             overview_image.paste(char_image, (x, y + image_height))
 
-        if text == predicted_text:
-            correct_predictions += 1
+        num_digits += len(text)
+        distance = levenshtein_distance(text, predicted_text)
+        num_correct_digits += len(text) - min(distance,len(text))
+        accuracy = float(num_correct_digits)/num_digits
 
         n+=1
-        sys.stdout.write("\r%d/%d  acc: %f" % (correct_predictions, n, float(correct_predictions) / n))
+        sys.stdout.write("\r%d/%d  acc: %f" % (n, num_examples, accuracy))
         sys.stdout.flush()
 
         if n >= max_num:
@@ -236,7 +242,7 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     if visualize:
         overview_image.save("overview.png")
 
-    print "Accuracy: %d/%d = %f" % (correct_predictions, n, float(correct_predictions) / n)
+    print "Accuracy: %f" % (accuracy)
 
 
 if __name__ == "__main__":
