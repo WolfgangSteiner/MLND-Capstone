@@ -199,7 +199,7 @@ class Training(object):
             metrics=['accuracy']
 
         self.model.compile(
-            optimizer=Adam(self.lr),
+            optimizer=Adagrad(self.lr),
             loss=loss_function,
             metrics=metrics)
 
