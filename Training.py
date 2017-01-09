@@ -6,7 +6,7 @@ from keras.layers import Dense, Dropout, Convolution2D, Flatten, Reshape, Activa
 from keras.layers import MaxPooling2D, AveragePooling2D
 from keras.models import Model, Sequential
 from keras.models import load_model
-from keras.optimizers import SGD, Adagrad
+from keras.optimizers import SGD, Adagrad, Adam
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
@@ -193,7 +193,7 @@ class Training(object):
 
     def compile(self, loss_function='categorical_crossentropy'):
         self.model.compile(
-            optimizer=Adagrad(self.lr, epsilon=1e-08, decay=0.0),
+            optimizer=Adam(self.lr),
             loss=loss_function,
             metrics=['accuracy'])
 
