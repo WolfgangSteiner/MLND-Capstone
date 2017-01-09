@@ -20,6 +20,10 @@ class Rectangle(object):
         return Rectangle(self.x1 / scale.x, self.y1 / scale.y, self.x2 / scale.x, self.y2 / scale.y)
 
 
+    def scale(self, scale):
+        return Rectangle(self.x1 * scale.x, self.y1 * scale.y, self.x2 * scale.x, self.y2 * scale.y)
+
+
     def as_array(self):
         return [self.x1, self.y1, self.x2, self.y2]
 
