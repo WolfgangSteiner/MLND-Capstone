@@ -10,18 +10,23 @@ from RectangleArray import RectangleArray
 from Rectangle import Rectangle
 from Point import Point
 from timeit import default_timer as timer
+from Drawing import scale_image
+import os
+from Utils import mkdir
+from MathUtils import levenshtein_distance
 
 def quantize(a, q):
     return int(a/q) * q
 
-char_detector = load_model("detection012b.hdf5")
+#char_detector = load_model("detection012-svhn-2.hdf5")
+char_detector = load_model("detection013.hdf5")
 
 detector_size = Point(32,32)
-detector_overlap = 2
-detector_scaling_factor = 0.75
-detector_scaling_min = 0.125
+detector_overlap = 4
+detector_scaling_factor = 0.5
+detector_scaling_min = 0.5
 detector_scaling_max = 2.0
-text_detector_threshold = 0.6
+text_detector_threshold = 0.75
 
 
 def rescale_image(img, scale_factor):
@@ -41,6 +46,7 @@ def rescale_image_to_height(img, height):
 def prepare_image_for_classification(image):
     w,h = image.size
     image_data = np.array(image).astype('float32')
+#    print "image size: %d, %d" % (w,h), image_data.shape
     return image_data.reshape(h,w,1)
 
 
@@ -114,7 +120,7 @@ def scan_image(img, max_factor=1.0, min_factor=None):
     else:
         min_size = Point(max(min_factor * w, detector_size.x), max(min_factor * h, detector_size.y))
 
-    while img.size[0] * factor > min_size.x and img.size[1] * factor > min_size.y:
+    while img.size[0] * factor >= min_size.x and img.size[1] * factor >= min_size.y:
         scan_image_at_scale(img, factor, rect_array)
         factor *= detector_scaling_factor
 
@@ -131,7 +137,7 @@ def draw_detected_text(img, result_array):
     draw = ImageDraw.Draw(img)
     for rect, text in result_array:
         draw.rectangle(rect.as_array(), outline=(0,255,0))
-        draw.text([rect.x1,rect.y2], text, fill=(0,255,0))
+        draw.text([rect.x1,rect.y1], text, fill=(0,255,0))
 
 
 def draw_separate_candidates(img, rect_array):
@@ -157,12 +163,20 @@ def scan_image_file(file_path):
 
 def test_image_file(file_path):
     img = Image.open(file_path)
+    output_dir = os.path.dirname(file_path) + "/output"
+    mkdir(output_dir)
+    result_path = output_dir + '/' + os.path.basename(file_path)
+
+    #img = scale_image(img, 2.0)
+    if img.mode != 'L':
+        img = img.convert('L')
     result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_bounding_boxes(result_img, rect_array)
     draw_detected_text(result_img, result_array)
     result_img.save("result.png")
+    result_img.save(result_path)
     return result_array
 
 
@@ -180,10 +194,11 @@ if __name__ == "__main__":
 
     n = 0
     true_positives = 0
-
+    num_digits = 0
+    num_correct_digits = 0
 
     start_time = timer()
-    
+
     for id, label in labels.iteritems():
         result_array = test_image_file(args.data_dir + "/" + id + ".png")
 
@@ -193,16 +208,18 @@ if __name__ == "__main__":
         for r in result_array:
             predicted_text += r[1] + " "
 
-        if predicted_label == label:
-            true_positives += 1
+        num_digits += len(label)
+        distance = levenshtein_distance(label, predicted_label)
+        num_correct_digits += len(label) - min(distance,len(label))
+
         n += 1
         if n > args.n:
             break
 
-        accuracy = float(true_positives)/n
+        accuracy = float(num_correct_digits)/num_digits
         print "%d/%d: %s %s -> %s accuracy = %.4f" % (n, min(len(labels),args.n), id[0:6], label, predicted_text, accuracy)
     print
 
     end_time = timer()
 
-    print "Finished int %fs" % (end_time - start_time)
+    print "Finished in %fs" % (end_time - start_time)
