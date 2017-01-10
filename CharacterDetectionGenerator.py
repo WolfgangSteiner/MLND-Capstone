@@ -10,7 +10,7 @@ from Point import Point
 import Drawing
 
 num_char_columns = 32
-num_char_rows = 32
+num_char_rows = 16
 debug = True
 char_source = NumericCharacterSource()
 
@@ -48,8 +48,8 @@ def create_detection_example(image_width, image_height, options={}):
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
 
-    if float(h) / image_height < 0.5:
-        label = False
+    #if float(h) / image_height < 0.25:
+    #    label = False
 
     while not is_word_start and random.random() > 0.5:
         text = char_source.random_char() + text
@@ -66,10 +66,8 @@ def create_detection_example(image_width, image_height, options={}):
     x += random_offset(0.5 * image_width)
     y += random_offset(0.5 * image_height)
     char_rect = Rectangle.from_point_and_size(Point(x,y), text_size)
-    y -= font.getoffset(text)[1]
-
-    vertical_center_rect = Rectangle.from_center_and_size(canvas_rect.center(), 0.75 * image_size)
-    if char_rect.y1 > vertical_center_rect.y1 or char_rect.y2 < vertical_center_rect.y2:
+    image_rect = Rectangle.from_center_and_size(canvas_rect.center(), image_size)
+    if image_rect.calc_overlap(char_rect) < 0.25:
         label = False
 
     draw = ImageDraw.Draw(char_image)
