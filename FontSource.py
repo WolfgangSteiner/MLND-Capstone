@@ -23,6 +23,7 @@ class FontSource(object):
             print("Loading fonts from font_cache.pickle ...")
             file = open('font_cache.pickle', 'rb')
             self.font_array = pickle.load(file)
+            print "Loaded %d fonts" % len(self.font_array)
         except IOError:
             self.add_fonts()
             file = open('font_cache.pickle', 'wb')
