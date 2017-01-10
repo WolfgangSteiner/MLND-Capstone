@@ -44,7 +44,7 @@ Similar to the work in \cite{Jaderberg2016} synthetic images have been generated
     \label{fig:pipeline}
 \end{figure}
 
-\section{Metrics}
+\section{Metrics and Benchmark}
 In order to assess the performance of the complete OCR pipeline, a set of test images $x_i$ containing
 a randomly generated string of digits of varying length is processed and the extracted string $a(x_i)$ is
 compared to the real label $y(x_i)$ using the following metric:
@@ -58,6 +58,22 @@ that are required to make two strings exactly equal by either deleting, insertin
 changing single characters. When calculating the accuracy, the Levenshtein distance is limited to
 the length of the true label (by use of the $\operatorname{min}$ function). This prevents the accuracy
 of a single example to become negative.
+
+Human level performance on the task of text transcription is often estimated to be greater
+than 98\% \cite{Goodfellow2013}. So an obvious benchmark for a OCR system would be to
+attain comparable or even better performance than human performance. When extracting text the
+performance of the system can be augmented by use of a dictionary to correct badly classified
+characters. When dealing with number strings only, this augmentation is not possible and
+the accuracy of the OCR system
+
+A second performance benchmark is speed. One application for an OCR system would be text extraction
+of documents scanned by use of the camera of a smartphone. The images would then be send to
+a server for processing or even better would be precessed directly on the mobile device.
+In both cases scanning a photo for text should not take more than a few second. For use in
+an augmented reality app, the speed needs to be even faster in order to allow for an acceptable
+frame rate. In this case, processing on the mobile device should be faster than about
+250ms.
+
 
 \section{Training Data}
 In this project I predominantly used synthetic images. In order to have a large variety of fonts,
