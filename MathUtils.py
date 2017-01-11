@@ -18,7 +18,9 @@ def levenshtein_distance(a, b):
 
     return min(levenshtein_distance(a[:-1], b) + 1, levenshtein_distance(a, b[:-1]) + 1, levenshtein_distance(a[:-1], b[:-1]) + cost)
 
+
 if __name__ == "__main__":
+    # some basic unit tests...
     assert levenshtein_distance("123", "124") == 1
     assert levenshtein_distance("13", "123") == 1
     assert levenshtein_distance("123456", "1245") == 2

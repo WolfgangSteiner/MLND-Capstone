@@ -3,6 +3,7 @@ import random
 import os, glob
 from PIL import ImageFont
 from Font import Font
+import re
 
 class FontSource(object):
     font_blacklist = (
@@ -18,6 +19,7 @@ class FontSource(object):
     def __init__(self):
         self.min_size = 0.75
         self.max_size = 1.0
+        self.char_height = 32
 
         try:
             print("Loading fonts from font_cache.pickle ...")
@@ -32,10 +34,11 @@ class FontSource(object):
 
 
     # Blacklist symbol fonts and fonts not working with PIL
+    @staticmethod
     def is_font_blacklisted(font_file):
         pattern = re.compile("^[A-Z]")
         font_family = os.path.basename(font_file).split(".")[0].split("-")[0]
-        return font_family.startswith(font_blacklist) or not pattern.match(font_family)
+        return font_family.startswith(FontSource.font_blacklist) or not pattern.match(font_family)
 
 
     def is_latin_font(self, font_subdir):
@@ -61,7 +64,7 @@ class FontSource(object):
 
     def add_fonts_in_subdir(self, directory_path):
         for font_file in glob.iglob(directory_path + "/*.ttf"):
-            if not is_font_blacklisted(font_file):
+            if not FontSource.is_font_blacklisted(font_file):
                 try:
                     max_font_size = self.calc_font_size(font_file)
                     self.font_array.append((font_file, max_font_size))
@@ -73,8 +76,8 @@ class FontSource(object):
     # Collect all ttf fonts in one font location, except those blacklisted.
     def add_fonts_in_directory(self, directory_path):
         for font_subdir in glob.iglob(directory_path + "/*"):
-            if is_latin_font(font_subdir):
-                add_fonts_in_subdir(font_subdir)
+            if self.is_latin_font(font_subdir):
+                self.add_fonts_in_subdir(font_subdir)
             else:
                 print("Skipping non-latin fonts in : %s" % font_subdir)
 
@@ -82,7 +85,7 @@ class FontSource(object):
     def add_fonts(self):
         self.font_array = []
         for font_dir in ("fonts-master/ofl", "fonts-master/apache", ):
-            add_fonts_in_directory(font_dir)
+            self.add_fonts_in_directory(font_dir)
 
 
     def random_font_with_size(self, size_factor):
@@ -97,7 +100,7 @@ class FontSource(object):
         size = random.uniform(min_size, max_size)
         return self.random_font_with_size(size)
 
-        
+
     def random_font_from_normal_distribution(self, mean, sigma):
         size = random.gauss(mean, sigma)
         return self.random_font_with_size(size)

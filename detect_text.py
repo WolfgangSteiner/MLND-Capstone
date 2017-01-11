@@ -1,4 +1,3 @@
-#from CharacterSequenceGenerator import create_char_sequence
 import numpy as np
 import pickle, sys, argparse, glob, pickle
 from keras.models import load_model
@@ -212,8 +211,7 @@ if __name__ == "__main__":
     parser.add_argument('--directory', action='store', dest='data_dir', default='data')
     args = parser.parse_args()
     output_dir = args.data_dir + "/output"
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
+    Utils.rmdir(output_dir)
 
     try:
         f = open(args.data_dir + '/labels.pickle', 'rb')
