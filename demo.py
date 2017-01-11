@@ -6,6 +6,7 @@ from time import sleep
 from detect_text import scan_image
 import cProfile
 from Drawing import scale_image
+from Utils import mkdir, uuid_file_name
 
 pr = cProfile.Profile()
 
@@ -69,6 +70,13 @@ def draw_probability(cv_img, p):
     cv2.putText(cv_img, "%.3f" % p, (x,y), font, fontScale=1, color=color_green, thickness=1)
 
 
+def save_screenshot(cv_img):
+    path = "screenshots"
+    mkdir(path)
+    filename = path + "/" + uuid_file_name("png")
+    cv2.imwrite(filename, cv_img)
+    print "saving image %s..." % filename
+
 #model=load_model('models/train014-svhn.hdf5')
 
 cap = cv2.VideoCapture(0)
@@ -93,8 +101,12 @@ while(True):
     # Display the resulting frame
     cv2.imshow('frame', frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord('q'):
         break
+    elif key == ord(' '):
+        save_screenshot(frame)
+
 
 # When everything done, release the capture
 cap.release()
