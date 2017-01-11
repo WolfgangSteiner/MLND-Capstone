@@ -18,10 +18,15 @@ class Point(object):
     def __mul__(self, factor):
         return Point(self.x * factor, self.y * factor)
 
-
     __rmul__ = __mul__
+
+
     def unscale(self, scale):
         return Point(self.x / scale.x, self.y / scale.y)
+
+
+    def scale(self, scale):
+        return Point(self.x * scale.x, self.y * scale.y)
 
 
     @staticmethod
