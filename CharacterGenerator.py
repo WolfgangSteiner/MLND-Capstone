@@ -77,9 +77,7 @@ def random_line_color(text_color, background_color, min_color_delta=32):
             return background_color
 
 
-
-
-def draw_line(draw, p1, p2, color, width, alpha=255):
+def draw_line(draw, p1, p2, color, width=1, alpha=255):
     draw.line((p1[0],p1[1],p2[0],p2[1]), fill=get_color(color, alpha=alpha), width=width)
 
 
