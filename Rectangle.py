@@ -59,19 +59,35 @@ class Rectangle(object):
         if not self.intersects(other_rect) or self.area() == 0.0:
             return 0.0
         else:
-            return self.intersect(other_rect).area() / self.area()
+            return float(self.intersect(other_rect).area()) / self.area()
+
+
+    def calc_vertical_overlap(self, r):
+        if not self.intersects_vertically(r) or self.height() == 0:
+            return 0.0
+        else:
+            ri = self.intersect(r)
+            return float(ri.height()) / self.height()
 
 
     def contains(self, r):
         return self.x1 <= r.x1 and self.x2 >= r.x2 and self.y1 <= r.y1 and self.y2 >= r.y2
 
 
+    def contains_point(self, p):
+        return self.x1 <= p.x and self.x2 >= p.x and self.y1 <= p.y and self.y2 >= p.y
+
+
     def contains_vertically(self, r):
         return self.y1 <= r.y1 and self.y2 >= r.y2
 
 
-    def shrink(self, m):
-        return Rectangle(self.x1 + m, self.y1 + m, self.x2 - m, self.y2 - m)
+    def shrink(self, point):
+        return Rectangle(self.x1 + point.x, self.y1 + point.y, self.x2 - point.x, self.y2 - point.y)
+
+
+    def shrink_with_factor(self, point):
+        return Rectangle.from_center_and_size(self.center(), self.size().scale(point))
 
 
     def union_with(self, other_rect):
