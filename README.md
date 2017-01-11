@@ -1,4 +1,5 @@
 # MLND-Capstone: Photo OCR Prototype
+![](https://raw.githubusercontent.com/WolfgangSteiner/MLND-Capstone/master/latex/fig/screenshots/03e8512f-35b8-4446-bc66-e0034f329101.png)
 
 # Instructions
 * Execute `prepare_project.py`, which will download and extract fonts from https://github.com/google/fonts and will create
