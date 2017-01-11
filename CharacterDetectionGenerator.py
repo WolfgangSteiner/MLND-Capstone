@@ -6,15 +6,12 @@ import numpy as np
 from Rectangle import Rectangle
 from Point import Point
 import Drawing
+from MathUtils import random_offset
 
 num_char_columns = 32
 num_char_rows = 16
 debug = True
 char_source = NumericCharacterSource()
-
-
-def random_offset(amp):
-    return random.uniform(-amp, amp)
 
 
 def create_detection_example(image_width, image_height, options={}):

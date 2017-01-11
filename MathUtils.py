@@ -1,7 +1,7 @@
 import random
 
 def random_offset(amp):
-    return (random.random() - 0.5) * 2.0 * amp
+    return random.uniform(-amp, amp)
 
 def levenshtein_distance(a, b):
     cost = 0
