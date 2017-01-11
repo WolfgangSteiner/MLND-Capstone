@@ -1,8 +1,6 @@
-from CharacterGenerator import create_char_background, rotate, add_noise, blur, crop, perspective_transform
-from CharacterGenerator import random_background_color, draw_text
-from CharacterGenerator import add_outline, add_shadow, font_source
+from CharacterGenerator import font_source
 from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
+from PIL import Image, ImageDraw
 import random
 import numpy as np
 from Rectangle import Rectangle
@@ -16,7 +14,7 @@ char_source = NumericCharacterSource()
 
 
 def random_offset(amp):
-    return (random.random() - 0.5) * 2.0 * amp
+    return random.uniform(-amp, amp)
 
 
 def create_detection_example(image_width, image_height, options={}):
@@ -28,17 +26,15 @@ def create_detection_example(image_width, image_height, options={}):
     canvas_rect = Rectangle.from_point_and_size(Point(0,0), 2 * image_size)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
-    background_color = random_background_color(text_color, min_color_delta=min_color_delta)
+    background_color = Drawing.random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
 
     image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=8)
     if random.random() < 0.3:
-        image = crop(image)
-        image = blur(image, options)
-        image = add_noise(image, options)
+        image = Drawing.crop(image)
+        image = Drawing.random_blur(image, options)
+        image = Drawing.add_noise(image, options)
         return image, 0
-    else:
-        label = True
 
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
     is_word_start = random.random() > 0.5
@@ -47,9 +43,6 @@ def create_detection_example(image_width, image_height, options={}):
     (w,h) = font.calc_text_size(text)
     x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
-
-    #if float(h) / image_height < 0.25:
-    #    label = False
 
     while not is_word_start and random.random() > 0.5:
         text = char_source.random_char() + text
@@ -62,7 +55,6 @@ def create_detection_example(image_width, image_height, options={}):
 
     text_width, text_height = font.calc_text_size(text)
     text_size = Point(text_width, text_height)
-#    x += random.randint(-2,2)
     x += random_offset(0.5 * image_width)
     y += random_offset(0.5 * image_height)
     char_rect = Rectangle.from_point_and_size(Point(x,y), text_size)
@@ -74,30 +66,20 @@ def create_detection_example(image_width, image_height, options={}):
         and char_rect.height() / image_rect.height() > 0.5
 
     draw = ImageDraw.Draw(char_image)
+    Drawing.draw_text_with_random_outline(draw, x, y, text, font, text_color)
 
     if random.random() > 0.5:
-        add_outline(draw, x, y, font, text, text_color)
-
-    draw_text(draw, x, y, text, font, text_color)
-
-    if random.random() > 0.5:
-        shadow_image = add_shadow(char_image, x, y, font, text, text_color)
-        image = Image.alpha_composite(image, shadow_image)
-
-    #draw.rectangle(char_rect.as_array(), outline=(255,255,255))
+        image = Drawing.add_shadow(char_image, image, x, y, font, text, text_color)
 
     char_image = Image.alpha_composite(image, char_image)
-    char_image = rotate(char_image, options)
-#    char_image = perspective_transform(char_image)
-    char_image = crop(char_image)
-    char_image = blur(char_image, options)
-    char_image = add_noise(char_image, options)
+    char_image = Drawing.random_rotate(char_image, options)
+    char_image = Drawing.crop(char_image)
+    char_image = Drawing.random_blur(char_image, options)
+    char_image = Drawing.add_noise(char_image, options)
     return char_image, int(label)
 
 
 def CharacterDetectionGenerator(batchsize, options={}):
-#    mean = options.get('mean', None)
-#    std = options.get('std', None)
     image_width = options.get('image_width', 32)
     image_height = 32
     full_alphabet = options.get('full_alphabet', False)

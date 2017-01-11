@@ -1,13 +1,10 @@
-from CharacterGenerator import create_char_background, rotate, add_noise, blur, crop, perspective_transform
-from CharacterGenerator import random_background_color, draw_text
-from CharacterGenerator import add_outline, add_shadow, font_source
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
+from CharacterGenerator import font_source
+from PIL import Image, ImageDraw
 import random
 import numpy as np
 import uuid
 import argparse
 import sys, errno, os
-import pickle
 from CharacterSource import NumericCharacterSource
 from FontSource import FontSource
 from Utils import mkdir
@@ -55,19 +52,14 @@ def create_text_detection_example(options={}):
     y -= font.getoffset(text)[1]
 
     draw = ImageDraw.Draw(char_image)
+    Drawing.draw_text_with_random_outline(draw, x, y, text, font, text_color)
 
     if random.random() > 0.5:
-        add_outline(draw, x, y, font, text, text_color)
-
-    draw_text(draw, x, y, text, font, text_color)
-
-    if random.random() > 0.5:
-        shadow_image = add_shadow(char_image, x, y, font, text, text_color)
-        image = Image.alpha_composite(image, shadow_image)
+        image = Drawing.add_shadow(char_image, image, x, y, font, text, text_color)
 
     image = Image.alpha_composite(image, char_image)
-    image = blur(image, options)
-    image = add_noise(image, options)
+    image = Drawing.random_blur(image, options)
+    image = Drawing.add_noise(image, options)
     image = image.resize((256, 256), resample=Image.BILINEAR)
     draw = ImageDraw.Draw(image)
     scale_factor = Point(256.0 / canvas_width, 256.0 / canvas_height)
@@ -79,16 +71,10 @@ def create_text_detection_example(options={}):
             window = Rectangle.from_point_and_size(Point(i,j) * 8, Point(16,16))
             if window.calc_overlap(text_rect) > 0.5:
                 labels[j*32 + i] = 1
-#                draw.rectangle(window.as_array(), outline=(128))
             else:
                 lables[j*32 + i] = 0
 
     return image, labels
-
-#     char_image = rotate(char_image, options)
-# #    char_image = perspective_transform(char_image)
-#     char_image = crop(char_image, w + margin, rescale=False)
-#     return char_image, text
 
 
 def TextDetectionGenerator(batchsize, options={}):

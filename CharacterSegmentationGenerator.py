@@ -1,15 +1,13 @@
-from CharacterGenerator import create_char_background, rotate, add_noise, blur, crop, perspective_transform
-from CharacterGenerator import random_background_color, draw_text
-from CharacterGenerator import add_outline, add_shadow, font_source
+from CharacterGenerator import font_source
 from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
+from PIL import Image, ImageDraw
 import random
 import numpy as np
 from FontSource import FontSource
+import Drawing
 
 num_char_columns = 32
 num_char_rows = 32
-debug = True
 char_source = NumericCharacterSource()
 
 def create_segmentation_example(image_width, image_height, font, options={}):
@@ -18,14 +16,14 @@ def create_segmentation_example(image_width, image_height, font, options={}):
     include_word_end_segmentation = options.get('include_word_end_segmentation', False)
     min_color_delta = options.get('min_color_delta', 32)
     text_color = random.randint(0,255)
-    background_color = random_background_color(text_color, min_color_delta=min_color_delta)
+    background_color = Drawing.random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
 
-    image = create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
+    image = Drawing.create_char_background(canvas_width, canvas_height, text_color, background_color, min_color_delta, options=options)
     if random.random() < 0.25:
-        image = crop(image)
-        image = blur(image, options)
-        image = add_noise(image, options)
+        image = Drawing.crop(image)
+        image = Drawing.random_blur(image, options)
+        image = Drawing.add_noise(image, options)
         return image, 0
 
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
@@ -59,28 +57,21 @@ def create_segmentation_example(image_width, image_height, font, options={}):
     y += (random.random() - 0.5) * (image_height - h)
 
     draw = ImageDraw.Draw(char_image)
+    Drawing.draw_text_with_random_outline(draw, x, y, text, font, text_color)
 
     if random.random() > 0.5:
-        add_outline(draw, x, y, font, text, text_color)
-
-    draw_text(draw, x, y, text, font, text_color)
-
-    if random.random() > 0.5:
-        shadow_image = add_shadow(char_image, x, y, font, text, text_color)
-        image = Image.alpha_composite(image, shadow_image)
+        image = Drawing.add_shadow(char_image, image, x, y, font, text, text_color)
 
     char_image = Image.alpha_composite(image, char_image)
-    char_image = rotate(char_image, options)
+    char_image = Drawing.random_rotate(char_image, options)
 #    char_image = perspective_transform(char_image)
-    char_image = crop(char_image)
-    char_image = blur(char_image, options)
-    char_image = add_noise(char_image, options)
+    char_image = Drawing.crop(char_image)
+    char_image = Drawing.random_blur(char_image, options)
+    char_image = Drawing.add_noise(char_image, options)
     return char_image, int(label)
 
 
 def CharacterSegmentationGenerator(batchsize, options={}):
-#    mean = options.get('mean', None)
-#    std = options.get('std', None)
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
@@ -95,14 +86,6 @@ def CharacterSegmentationGenerator(batchsize, options={}):
             is_char_border = int(random.random() > 0.5)
             image, label = create_segmentation_example(image_width, image_height, font, options)
             image_data = np.array(image).astype('float32')/255.0
-
-            # if mean == None:
-            #     mean = np.mean(image_data, axis=(0,1))
-            #
-            # if std == None:
-            #     std = np.std(image_data, axis=(0,1))
-            #
-            # image_data = (image_data - mean) / std
 
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
@@ -126,11 +109,6 @@ if __name__ == "__main__":
             font=font_source.random_font(options)
             image, label = create_segmentation_example(image_width, image_height, font, options)
             overview_image.paste(image, (image_width*i, image_height*j))
-
-            #overview_image.paste(Image.fromarray((batch[0][i].reshape(image_height,image_width) * 255).astype('uint8'),mode="L"), (image_width*i, image_height*j))
-
-            if debug:
-                overview_draw.text((i * image_width, j * image_height + 20), str(label))
-#                overview_draw.text((i * image_width, j * image_height + 38), "%02d/%02d" % (j,i))
+            overview_draw.text((i * image_width, j * image_height + 20), str(label))
 
     overview_image.save("overview.png")
