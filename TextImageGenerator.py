@@ -30,9 +30,9 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
     text_color = random.randint(0,255)
     background_color = random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
+    max_noise_scale = options.get('max_noise_scale', 64)
 
-
-    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=64)
+    image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=max_noise_scale)
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
 
     text = ""
@@ -58,6 +58,7 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
         add_outline(draw, x, y, font, text, text_color)
 
     draw_text(draw, x, y, text, font, text_color)
+    char_image = rotate(char_image, options)
 
     if random.random() > 0.5:
         shadow_image = add_shadow(char_image, x, y, font, text, text_color)
@@ -68,7 +69,6 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
     image = add_noise(image, options)
     return image, text
 
-#     char_image = rotate(char_image, options)
 # #    char_image = perspective_transform(char_image)
 #     char_image = crop(char_image, w + margin, rescale=False)
 #     return char_image, text
@@ -102,15 +102,18 @@ def create_text_image(image_width = 128, image_height = 32, options={}):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
+    parser.add_argument('--max-noise-scale', action="store", dest="max_noise_scale", type=int, default=64)
+    parser.add_argument('--max-rotation', action="store", dest="max_rotation", type=float, default=2.5)
     parser.add_argument('--directory', action='store', dest='data_dir', default='data')
     parser.add_argument("--save", help="save image as png along with a pickle of the labels", action="store_true")
     args = parser.parse_args()
 
     image_width = 256
     image_height = 32
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':args.max_rotation, 'min_noise':4, 'max_noise':16, 'add_background_lines':False}
     options['max_size'] = 8.0
     options['min_size'] = 0.75
+    options['max_noise_scale'] = args.max_noise_scale
 
     if args.save:
         labels = {}
