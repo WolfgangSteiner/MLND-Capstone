@@ -61,7 +61,7 @@ of a single example to become negative.
 
 Human level performance on the task of text transcription is often estimated to be greater
 than 98\% \cite{Goodfellow2013}. So an obvious benchmark for a OCR system would be to
-attain comparable or even better performance than human performance. When extracting text the
+attain comparable or even better performance than a human is capable of. When extracting text the
 performance of the system can be augmented by use of a dictionary to correct badly classified
 characters. When dealing with number strings only, this augmentation is not possible and
 the accuracy of the OCR system
@@ -80,20 +80,6 @@ In this project I predominantly used synthetic images. In order to have a large 
 I used the google fonts repository as a source \cite{googlefo53:online}. After excluding some
 symbol and non-latin fonts, a collection of 1525 fonts was available for synthesizing images.
 The procedure for synthesizing training images is as follows:
-\begin{itemize}
-  \itemsep0em
-  \item A text and a background color is chosen randomly.
-  \item A background image is synthesized by upscaling noise by a random factor and applying gaussian blurring.
-  \item One of the 1525 fonts is chosen randomly.
-  \item One of the characters is chosen randomly.
-  \item Adjacent characters are added in some images to the left or right.
-  \item An outline is randomly added to the characters.
-  \item A shadow of random width and direction is added to the characters.
-  \item The image is rotated by a random amount.
-  \item Gaussian blur is applied with random radius.
-  \item Noise of random amount is added to the image.
-\end{itemize}
-
 \begin{figure}[ht!]
   \centering
   \makebox[\textwidth][c]
@@ -109,6 +95,21 @@ The procedure for synthesizing training images is as follows:
   }
   \label{fig:training_images}
 \end{figure}
+
+\begin{itemize}
+  \itemsep0em
+  \item A text and a background color is chosen randomly.
+  \item A background image is synthesized by upscaling noise by a random factor and applying gaussian blurring.
+  \item One of the 1525 fonts is chosen randomly.
+  \item One of the characters is chosen randomly.
+  \item Adjacent characters are added in some images to the left or right.
+  \item An outline is randomly added to the characters.
+  \item A shadow of random width and direction is added to the characters.
+  \item The image is rotated by a random amount.
+  \item Gaussian blur is applied with random radius.
+  \item White noise of random amount is added to the image.
+\end{itemize}
+
 
 
 Some examples of images used to train the three required CNN classifiers are shown in Fig.~\ref{fig:training_images}.
@@ -126,12 +127,12 @@ Training images for the character classifier (Fig.~\ref{fig:training_images}, le
 by the classifier after segmentation.
 %
 Characters are also resized to the width of the image as the windows between character boundaries are rescaled to the
-input width of 32~px.
+input width of 32px.
 %
 The labels are simply the corresponding character and are one-hot encoded for training and prediction.
 
 
-Training images for the segmentation classifier (Fig.~\ref{fig:training_images}, center) are only 8~px wide in order to improve the spacial resolution of the segmentation procedure (see below).
+Training images for the segmentation classifier (Fig.~\ref{fig:training_images}, center) are only 16px wide in order to improve the spacial resolution of the segmentation procedure (see below).
 %
 Here, label "1" is assigned if a character starts to the right of the center (for the beginning of a character sequence),
 a character starts to the left of the center (for the end of a character sequence), or if the spacing
@@ -141,7 +142,7 @@ Label "0" is assigned, if no character is present in the image or if a character
 
 
 Finally, the training images for the character detection classifier (Fig.~\ref{fig:training_images}, right) are
-designed to find bounding boxes for character sequences that fit as tight as possible in order to improve
+designed to find bounding boxes for character sequences that fit as tightly as possible in order to improve
 the accuracy of character segmentation and classification.
 %
 Because of this, images that only have small
@@ -214,7 +215,7 @@ box containing a character sequence which is then segmented into single characte
         \includegraphics[width=0.35\linewidth]{fig/good_examples_pipeline/c53b3f16-079b-46bf-90cb-6a7a2cfef5f5}
         \includegraphics[width=0.35\linewidth]{fig/good_examples_pipeline/95e76bd2-5815-4d36-aea1-7a5712ec0ae9}
     }
-    \caption{Examples of correctly extracted digits strings. Red rectangles are positive classifications of the
+    \caption{Examples of correctly transcribed digits strings. Red rectangles are positive classifications of the
     character detection classifier. The green rectangle corresponds to the bounding box calculated as the union
     of the red rectangles.}
     \label{fig:good_examples_pipeline}
@@ -229,17 +230,82 @@ box containing a character sequence which is then segmented into single characte
       \includegraphics[width=0.35\linewidth]{fig/bad_examples_pipeline/c884bc67-4128-43e7-8ff5-814f79e79699}
     }
     \caption{
-      Examples of incorrectly extracted digits strings. Repetition of digits (left).
+      Examples of incorrectly transcribed digits strings. Repetition of digits (left).
       Missing digits (center). Low contrast images and small test size may result in character failing detection,
       resulting in a bounding box that is too small for segmentation and classification (right).
     }
     \label{fig:bad_examples_pipeline}
 \end{figure}
 
+As part of this project a proof-of-concept demo was implemented that detects and transcribes
+strings of digits using a webcam. Example screenshots of this demo in action are shown in Fig.~\ref{fig:webcam}. As can be seen,
+the system works in principle and successfully detects and transcribes digit sequences at
+different angles of rotation (Fig.~\ref{fig:webcam}, (left) and (center)).
+Regrettably, performance is lacking: even when running the OCR pipeline on a GPU (GTX 1060), the system struggles to deliver an acceptable frame rate.
+It also struggles when the image is cluttered, as shown in Fig.~\ref{fig:webcam} (right), where
+an additional edge is introduced. The false positives of the character detector at this edge
+prevent the system from finding a text bounding box that is tight enough to enable successful transcription
+of the digit sequence.
 
+\begin{figure}[ht]
+    \centering
+    \makebox[\textwidth][c]
+    {
+      \includegraphics[width=0.35\linewidth]{fig/screenshots/03e8512f-35b8-4446-bc66-e0034f329101}
+      \includegraphics[width=0.35\linewidth]{fig/screenshots/8460d117-68e5-4a2c-a1c0-fb7aecba8930}
+      \includegraphics[width=0.35\linewidth]{fig/screenshots/bc92bc6a-357d-4d68-94ea-529008bd7456}
+    }
+    \caption{
+      Screenshots of the proof-of-concept implementation of a text detection system using
+      a webcam. Successful text detection (left, center) for different angles of rotation.
+      Failing text detection when an edge of high contrast is visible in the image (right).
+    }
+    \label{fig:webcam}
+\end{figure}
 
+\section{Conclusion}
+Implementing a photo OCR pipeline is a challenging problem. Not only do all of the different stages
+of the pipeline have to achieve a high level of accuracy, their performance also have a direct
+impact on the later stages. If, for example the text detection stage does not extract a tightly
+fitting bounding box, the segmentation and classification stages will receive character images
+that are scaled down vertically, thus reducing their ability to perform at their maximum
+accuracy.
 
-\newpage
+Accuracy can be improved by increasing the spacial resolution and the number of intermediate scaling steps
+of the sliding window text detection.
+Both measures in turn will drastically increases the processing time per image. This problem is
+further exacerbated if the system should also be able to extract text of small size because in this requires
+upscaling of the source image prior to text detection.
+
+Apart from the unfavorable accuracy/time trade-off, the sliding window algorithm suffers from an additional
+drawback: The text detection classifier has to make accurate decisions based only on the contents
+of a small section of the whole image. All surrounding contextual information is discarded, which
+makes it very hard to reach a high accuracy. Does an edge detected in a window belong to a character
+or is it the edge of a piece of paper? Is there an arc of a digit or does the background have
+some coarse structure to it? These dilemmas either lead to many false positives if the
+decision threshold is lowered or to incomplete text bounding boxes if the threshold is increased
+too much which both decrease accuracy in certain applications. Consequently it is very hard
+to implement a robust system that generalizes well over a broad range of applications and
+would instead lead to specifically tuned versions for different purposes
+(e.g. document scanning vs. extracting text from street view images).
+
+Improving the sliding window algorithm could be achieved by a dividing text detection into
+multiple phases. In \cite{Li2016}, candidate bounding boxes are first computed using a
+simple CNN classifier which are then further filtered on multiple resolutions
+based on heuristics from the problem domain (car license plate detection). In \cite{Jaderberg2016},
+proposals are filter using a random forrest classifier and then further enhanced using a regression
+technique.
+
+Overall it seems that the sliding window algorithm, while relatively straightforward to implement
+(if hard to optimize) and widely used, would better be replaced by a solution that can be trained
+end-to-end and that takes more image context into account. One technique are R-CNNs \cite{Girshick2013,Jaderberg2016},
+which use a selective search in image space to generate proposal regions that are then fed
+into a CNN for classification. Another technique is YOLO (You Only Look Once, \cite{Redmon}) that
+uses a grid of classifiers in order to directly predict the position and size of bounding boxes.
+Finally, if the (maximum) length of the text is known for the application \cite{Goodfellow2013,Li2016}, this will also greatly simplify
+the detection algorithm as, for example, the aspect ratio of the text bounding boxes can be used
+to filter out false positives.
+
 \bibliography{main,web}
 \bibliographystyle{ieeetr}
 

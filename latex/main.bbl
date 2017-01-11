@@ -1,0 +1,35 @@
+\begin{thebibliography}{1}
+
+\bibitem{Goodfellow2013}
+I.~J. Goodfellow, Y.~Bulatov, J.~Ibarz, S.~Arnoud, and V.~Shet, ``{Multi-digit
+  Number Recognition from Street View Imagery using Deep Convolutional Neural
+  Networks},'' {\em CoRR}, vol.~abs/1312.6, pp.~1--13, 2013.
+
+\bibitem{Jaderberg2016}
+M.~Jaderberg, K.~Simonyan, A.~Vedaldi, and A.~Zisserman, ``{Reading Text in the
+  Wild with Convolutional Neural Networks},'' {\em International Journal of
+  Computer Vision}, 2016.
+
+\bibitem{Levensht20:online}
+``Levenshtein distance - wikipedia.''
+  \url{https://en.wikipedia.org/wiki/Levenshtein_distance}.
+\newblock (Accessed on 01/07/2017).
+
+\bibitem{googlefo53:online}
+``google/fonts: Font files available from google fonts.''
+  \url{https://github.com/google/fonts}.
+\newblock (Accessed on 01/08/2017).
+
+\bibitem{Li2016}
+H.~Li and C.~Shen, ``{Reading Car License Plates Using Deep Convolutional
+  Neural Networks and LSTMs},'' {\em arXiv}, p.~17, 2016.
+
+\bibitem{Girshick2013}
+R.~Girshick, J.~Donahue, T.~Darrell, and J.~Malik, ``{Rich feature hierarchies
+  for accurate object detection and semantic segmentation},'' nov 2013.
+
+\bibitem{Redmon}
+J.~Redmon, S.~Divvala, R.~Girshick, and A.~Farhadi, ``{You only look once:
+  Unified, real-time object detection},'' {\em CVPR}, 2016.
+
+\end{thebibliography}
