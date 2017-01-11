@@ -84,6 +84,8 @@ def create_detection_example(image_width, image_height, options={}):
         shadow_image = add_shadow(char_image, x, y, font, text, text_color)
         image = Image.alpha_composite(image, shadow_image)
 
+    #draw.rectangle(char_rect.as_array(), outline=(255,255,255))
+
     char_image = Image.alpha_composite(image, char_image)
     char_image = rotate(char_image, options)
 #    char_image = perspective_transform(char_image)
@@ -126,12 +128,18 @@ if __name__ == "__main__":
     full_alphabet = options.get('full_alphabet', False)
     char_source = AlphaNumericCharacterSource() if full_alphabet else NumericCharacterSource()
 
+    num_positives = 0
+
     for j in range(0,num_char_rows):
         for i in range(0,num_char_columns):
             image, label = create_detection_example(image_width, image_height, options)
+            if label == 1:
+                num_positives += 1
             overview_image.paste(image, (image_width*i, image_height*j))
 
             if debug:
                 overview_draw.text((i * image_width, j * image_height + 20), str(label))
 
     overview_image.save("overview.png")
+    num_examples = num_char_rows * num_char_columns
+    print("%d of %d positive examples (%f)" % (num_positives, num_examples, float(num_positives)/num_examples))
