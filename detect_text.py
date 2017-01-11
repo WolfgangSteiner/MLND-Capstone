@@ -11,7 +11,7 @@ from Rectangle import Rectangle
 from Point import Point
 from timeit import default_timer as timer
 from Drawing import scale_image
-import os
+import os, shutil
 from Utils import mkdir
 from MathUtils import levenshtein_distance
 
@@ -19,14 +19,15 @@ def quantize(a, q):
     return int(a/q) * q
 
 #char_detector = load_model("detection012-svhn-2.hdf5")
-char_detector = load_model("detection013.hdf5")
+#char_detector = load_model("detection013-new.hdf5")
+char_detector = load_model("detection.hdf5")
 
 detector_size = Point(32,32)
 detector_overlap = 4
-detector_scaling_factor = 0.5
-detector_scaling_min = 0.5
-detector_scaling_max = 2.0
-text_detector_threshold = 0.995
+detector_scaling_factor = 0.75
+detector_scaling_min = 0.1
+detector_scaling_max = 1.0
+detector_threshold = 0.85
 
 
 def rescale_image(img, scale_factor):
@@ -58,7 +59,7 @@ def check_text(img, pos):
     return is_text, window_rect
 
 
-def detect_text(img):
+def detect_text(img, detector_overlap=2):
     y = 0
     (w,h) = img.size
     delta_x = detector_size.x / detector_overlap
@@ -79,21 +80,21 @@ def detect_text(img):
     return result
 
 
-def scan_image_at_scale(img, scale_factor, rect_array):
+def scan_image_at_scale(img, scale_factor, rect_array, detector_overlap=2, detector_threshold=0.85):
     scaled_img, scale_factors = rescale_image(img, scale_factor)
     (w,h) = scaled_img.size
     y = 0
     delta_x = detector_size.x / detector_overlap
     delta_y = detector_size.y / detector_overlap
     result_array = []
-    is_text_vector = detect_text(scaled_img)
+    is_text_vector = detect_text(scaled_img, detector_overlap)
     i = 0
 
     while y <= h - detector_size.y:
         x = 0
         while x <= w - detector_size.x:
             window_rect = Rectangle.from_point_and_size(Point(x,y), detector_size)
-            is_text = is_text_vector[i] > text_detector_threshold
+            is_text = is_text_vector[i] > detector_threshold
             if is_text:
                 rect_array.add(window_rect.unscale(scale_factors))
 
@@ -105,11 +106,11 @@ def scan_image_at_scale(img, scale_factor, rect_array):
 def infer_text(img, rect):
     text_line_img = img.crop(rect.as_array())
     text_line_img = rescale_image_to_height(text_line_img, detector_size.y)
-    text = predict_word(text_line_img)
-    return text
+    text, seg_array = predict_word(text_line_img)
+    return text, seg_array
 
 
-def scan_image(img, max_factor=1.0, min_factor=None):
+def scan_image(img, max_factor=1.0, min_factor=None, detector_scaling_factor=0.5, detector_overlap=2, detector_threshold=0.85):
     rect_array = RectangleArray()
     factor = max_factor
     result_array = []
@@ -121,23 +122,35 @@ def scan_image(img, max_factor=1.0, min_factor=None):
         min_size = Point(max(min_factor * w, detector_size.x), max(min_factor * h, detector_size.y))
 
     while img.size[0] * factor >= min_size.x and img.size[1] * factor >= min_size.y:
-        scan_image_at_scale(img, factor, rect_array)
+        scan_image_at_scale(img, factor, rect_array, detector_overlap, detector_threshold)
         factor *= detector_scaling_factor
 
     rect_array.finalize()
     for r in rect_array.list:
-        text = infer_text(img, r)
+        #shrink the bounding box as it is overestimated in vertical direction
+        #r = r.shrink_with_factor(Point(1.0, 0.75))
+        text, seg_array = infer_text(img, r)
         if len(text):
-            result_array.append((r,text))
+            result_array.append((r,text,seg_array))
 
     return result_array, rect_array
 
 
-def draw_detected_text(img, result_array):
+def draw_detected_text(img, result_array, label):
     draw = ImageDraw.Draw(img)
-    for rect, text in result_array:
+    for rect, text, seg_array in result_array:
         draw.rectangle(rect.as_array(), outline=(0,255,0))
-        draw.text([rect.x1,rect.y1], text, fill=(0,255,0))
+        text_color = (0,255,0) if text == label else (255,0,0)
+        draw.text([rect.x1,rect.y1], text, fill=text_color)
+
+
+def draw_segmentation(img, result_array):
+    draw = ImageDraw.Draw(img)
+    for rect, text, seg_array in result_array:
+        factor = 32.0 / rect.height()
+        for s in seg_array:
+            x = int(rect.x1 + s / factor)
+            draw.line((x, rect.y1, x, rect.y2), fill=(128,128,255), width=4)
 
 
 def draw_separate_candidates(img, rect_array):
@@ -154,28 +167,41 @@ def draw_bounding_boxes(img, rect_array):
 
 def scan_image_file(file_path):
     img = Image.open(file_path)
-    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min)
+    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min, detector_scaling_factor, detector_overlap)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_detected_text(result_img, result_array)
+    draw_segmentation(result_img, result_array)
     result_img.show()
 
 
-def test_image_file(file_path):
+def has_correct_label(result_array, label):
+    for _, text, _ in result_array:
+        if text == label:
+            return True
+    return False
+
+
+def test_image_file(file_path, label):
     img = Image.open(file_path)
     output_dir = os.path.dirname(file_path) + "/output"
-    mkdir(output_dir)
-    result_path = output_dir + '/' + os.path.basename(file_path)
+    correct_dir = output_dir + "/correct"
+    incorrect_dir = output_dir + "/incorrect"
+    mkdir(correct_dir)
+    mkdir(incorrect_dir)
 
     #img = scale_image(img, 2.0)
     if img.mode != 'L':
         img = img.convert('L')
-    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min)
+    result_array, rect_array = scan_image(img, detector_scaling_max, detector_scaling_min, detector_scaling_factor, detector_overlap, detector_threshold)
     result_img = img.convert('RGB')
     draw_separate_candidates(result_img, rect_array)
     draw_bounding_boxes(result_img, rect_array)
-    draw_detected_text(result_img, result_array)
+    draw_detected_text(result_img, result_array, label)
+    draw_segmentation(result_img, result_array)
     result_img.save("result.png")
+    result_path = correct_dir if has_correct_label(result_array, label) else incorrect_dir
+    result_path += '/' + os.path.basename(file_path)
     result_img.save(result_path)
     return result_array
 
@@ -185,6 +211,9 @@ if __name__ == "__main__":
     parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
     parser.add_argument('--directory', action='store', dest='data_dir', default='data')
     args = parser.parse_args()
+    output_dir = args.data_dir + "/output"
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
 
     try:
         f = open(args.data_dir + '/labels.pickle', 'rb')
@@ -200,7 +229,7 @@ if __name__ == "__main__":
     start_time = timer()
 
     for id, label in labels.iteritems():
-        result_array = test_image_file(args.data_dir + "/" + id + ".png")
+        result_array = test_image_file(args.data_dir + "/" + id + ".png", label)
 
         predicted_label = result_array[0][1] if len(result_array) else ""
         predicted_text = ""
