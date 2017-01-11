@@ -188,7 +188,7 @@ def draw_chars(img, seg_array):
 
 def predict_word(img):
     seg_array, score_array = segment_characters(img)
-    return classify_characters(img, seg_array)
+    return classify_characters(img, seg_array), seg_array
 
 
 def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
