@@ -85,9 +85,19 @@ class FontSource(object):
             add_fonts_in_directory(font_dir)
 
 
+    def random_font_with_size(self, size_factor):
+        font_name, max_font_size = random.choice(self.font_array)
+        size = int(max_font_size * size_factor)
+        return Font.from_ttf_file(font_name, size)
+
+
     def random_font(self, options={}):
         min_size = options.get('min_size', 0.75)
         max_size = options.get('max_size', 1.0)
-        font_name, max_font_size = random.choice(self.font_array)
-        size = random.randint(int(max_font_size * min_size), int(max_font_size * max_size))
-        return Font.from_ttf_file(font_name, size)
+        size = random.uniform(min_size, max_size)
+        return self.random_font_with_size(size)
+
+        
+    def random_font_from_normal_distribution(self, mean, sigma):
+        size = random.gauss(mean, sigma)
+        return self.random_font_with_size(size)
