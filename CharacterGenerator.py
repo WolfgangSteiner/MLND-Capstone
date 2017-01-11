@@ -211,7 +211,6 @@ def create_char(char_width, char_height, font, char, options={}):
 
     x += (random.random() - 0.5) * 0.5 * (char_width - w)
     y += (random.random() - 0.5) * (char_height - h)
-    y -= font.getoffset(text)[1]
 
     draw = ImageDraw.Draw(char_image)
 
