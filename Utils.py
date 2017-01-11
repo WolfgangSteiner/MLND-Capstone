@@ -1,6 +1,8 @@
 import os
 import sys
 import errno
+import uuid
+
 
 def mkdir(path):
     try:
@@ -10,3 +12,7 @@ def mkdir(path):
             pass
         else:
             raise
+
+        
+def uuid_file_name(extension):
+    return str(uuid.uuid4()) + "." + extension
