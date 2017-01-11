@@ -32,7 +32,7 @@ def create_detection_example(image_width, image_height, options={}):
     text = char_source.random_char()
 
     image = Drawing.create_noise_background(canvas_size, text_color, background_color, min_color_delta, random.uniform(0.5,1.5), max_factor=8)
-    if random.random() < 0.4:
+    if random.random() < 0.3:
         image = crop(image)
         image = blur(image, options)
         image = add_noise(image, options)
@@ -67,8 +67,11 @@ def create_detection_example(image_width, image_height, options={}):
     y += random_offset(0.5 * image_height)
     char_rect = Rectangle.from_point_and_size(Point(x,y), text_size)
     image_rect = Rectangle.from_center_and_size(canvas_rect.center(), image_size)
-    if image_rect.calc_overlap(char_rect) < 0.25:
-        label = False
+    center_rect = image_rect.shrink_with_factor(Point(0.5, 0.5))
+    label = image_rect.intersects_horizontally(char_rect) \
+        and (center_rect.calc_vertical_overlap(char_rect) > 0.8) \
+        and char_rect.height() / image_rect.height() < 1.25 \
+        and char_rect.height() / image_rect.height() > 0.5
 
     draw = ImageDraw.Draw(char_image)
 
