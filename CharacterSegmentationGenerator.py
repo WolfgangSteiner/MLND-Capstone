@@ -57,7 +57,6 @@ def create_segmentation_example(image_width, image_height, font, options={}):
 
 #    x += random.randint(-2,2)
     y += (random.random() - 0.5) * (image_height - h)
-    y -= font.getoffset(text)[1]
 
     draw = ImageDraw.Draw(char_image)
 
