@@ -5,3 +5,4 @@
 * keras / tensorflow
 * OpenCV (for the webcam demo)
 * Pillow
+* numpy
