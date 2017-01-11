@@ -82,7 +82,7 @@ def draw_line(draw, p1, p2, color, width=1, alpha=255):
 
 
 def draw_text(draw, x, y, text, font, color):
-    draw.text((x,y), text, font=font.image_font, fill=get_color(color))
+    draw.text((x,y - font.image_font.getoffset(text)[1]), text, font=font.image_font, fill=get_color(color))
 
 
 def draw_random_line(canvas_width, canvas_height, draw, text_color, background_color, min_color_delta, oversampling=4):
