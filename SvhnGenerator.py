@@ -65,7 +65,7 @@ def SvhnDetectionGenerator(batchsize, options={}):
         y = []
         for i in range(0,batchsize):
             img, label = generate_random_example()
-            img_data = np.array(img).astype('float32')
+            img_data = np.array(img).astype('float32') / 255.0
             x.append(img_data.reshape(detector_size.y,detector_size.x,1))
             y.append(label)
 
