@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 import sys
 import argparse
+import Utils
 
 
 def unpack_int(hdf5_file, bbox, field):
@@ -107,8 +108,7 @@ bboxes = {}
 
 print "Reading digitStruct.mat..."
 for i in range(0,num_data):
-    sys.stdout.write("%d%%\r" % (100 * i / num_data))
-    sys.stdout.flush()
+    Utils.progress_bar(i+1,num_data)
     name_ref = name_refs[i][0]
     bbox_ref = bbox_refs[i][0]
     file_name_array = np.array(f.get(name_ref))
