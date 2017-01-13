@@ -5,6 +5,8 @@ import random
 import numpy as np
 from FontSource import FontSource
 import Drawing
+import Utils
+import pickle
 
 num_char_columns = 32
 num_char_rows = 32
@@ -13,8 +15,7 @@ char_source = NumericCharacterSource()
 def create_segmentation_example(image_width, image_height, font, options={}):
     canvas_width = image_width * 2
     canvas_height = image_height * 2
-    include_word_end_segmentation = options.get('include_word_end_segmentation', False)
-    min_color_delta = options.get('min_color_delta', 32)
+    min_color_delta = options.get('min_color_delta', 8)
     text_color = random.randint(0,255)
     background_color = Drawing.random_background_color(text_color, min_color_delta=min_color_delta)
     text = char_source.random_char()
@@ -27,7 +28,6 @@ def create_segmentation_example(image_width, image_height, font, options={}):
         return image, 0
 
     char_image = Image.new('RGBA', (canvas_width, canvas_height), (0,0,0,0))
-    label = False
     is_word_start = random.random() > 0.5
     is_word_end = random.random() > 0.5
 
@@ -41,7 +41,6 @@ def create_segmentation_example(image_width, image_height, font, options={}):
 
     if is_word_end and label == True:
         x = 0.5 * canvas_width - w
-        label = include_word_end_segmentation
 
     y = 0.5 * (canvas_height - h)
 
@@ -53,7 +52,7 @@ def create_segmentation_example(image_width, image_height, font, options={}):
     if not is_word_end:
         text = text + char_source.random_char()
 
-#    x += random.randint(-2,2)
+    x += random.randint(-2,2)
     y += (random.random() - 0.5) * (image_height - h)
 
     draw = ImageDraw.Draw(char_image)
@@ -76,21 +75,32 @@ def CharacterSegmentationGenerator(batchsize, options={}):
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
 
+    show_progress = options.get('show_progress', False)
     image_width = options.get('image_width', 16)
     image_height = 32
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
+            if show_progress:
+                Utils.progress_bar(i+1,batchsize)
             font = font_source.random_font(options)
-            is_char_border = int(random.random() > 0.5)
             image, label = create_segmentation_example(image_width, image_height, font, options)
             image_data = np.array(image).astype('float32')/255.0
 
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
 
-        yield np.array(x),y
+        yield np.array(x),np.array(y)
+
+
+def generate_test_data(file_name, num_examples, options={}):
+    options['show_progress'] = True
+    gen = CharacterSegmentationGenerator(num_examples, options)
+    X,y = gen.next()
+    with open(file_name, "wb") as f:
+        pickle.dump(X,f)
+        pickle.dump(y,f)
 
 
 if __name__ == "__main__":
@@ -98,7 +108,7 @@ if __name__ == "__main__":
     image_height = 32
     overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'include_word_end_segmentation':True}
+    options={'min_color_delta':32.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4}
 
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
