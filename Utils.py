@@ -5,6 +5,8 @@ import uuid
 import time
 import urllib
 import shutil
+import cv2
+
 
 def mkdir(path):
     try:
@@ -47,7 +49,20 @@ def progress_bar(i, n, message=None, length=40):
     percent = float(i) / n
     dots = int(percent * length)
     head = "" if message is None else message + ' ... '
-    bar = "[" + '#'*dots + '-'*(length - dots) + ']'
-    bar += " %d%%" % (percent*100)
+    if percent < 1.0:
+        bar_length = max(dots - 1,1)
+        bar = "[" + '='*(bar_length) + '>' + '.'*(length - bar_length - 1) + ']'
+    else:
+        bar = '[' + '='*length + ']'
+
+    bar += " %3.d%%" % (percent*100)
     sys.stdout.write('\r' + head + bar)
     sys.stdout.flush()
+    if i == n:
+        print("")
+
+
+def display_image(img_file):
+    img = cv2.imread(img_file)
+    cv2.imshow(img_file, img)
+    cv2.waitKey(100)
