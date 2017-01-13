@@ -11,7 +11,7 @@ from Point import Point
 from timeit import default_timer as timer
 from Drawing import scale_image
 import os, shutil
-from Utils import mkdir
+import Utils
 from MathUtils import levenshtein_distance
 import Levenshtein
 
@@ -187,8 +187,8 @@ def test_image_file(file_path, label):
     output_dir = os.path.dirname(file_path) + "/output"
     correct_dir = output_dir + "/correct"
     incorrect_dir = output_dir + "/incorrect"
-    mkdir(correct_dir)
-    mkdir(incorrect_dir)
+    Utils.mkdir(correct_dir)
+    Utils.mkdir(incorrect_dir)
 
     #img = scale_image(img, 2.0)
     if img.mode != 'L':
