@@ -13,6 +13,7 @@ from Drawing import scale_image
 import os, shutil
 from Utils import mkdir
 from MathUtils import levenshtein_distance
+import Levenshtein
 
 def quantize(a, q):
     return int(a/q) * q
@@ -236,7 +237,7 @@ if __name__ == "__main__":
             predicted_text += r[1] + " "
 
         num_digits += len(label)
-        distance = levenshtein_distance(label, predicted_label)
+        distance = Levenshtein.distance(label, predicted_label)
         num_correct_digits += len(label) - min(distance,len(label))
 
         n += 1
