@@ -205,7 +205,7 @@ class Training(object):
 
 
     def conv(self, depth, filter_size=3, subsample=(1,1)):
-        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(self.wreg), input_shape=self.current_shape, subsample=subsample)
+        conv_layer = Convolution2D(depth, filter_size, filter_size, border_mode='same', W_regularizer=regularizer(self.wreg), input_shape=self.current_shape, subsample=subsample, init=self.winit)
         self.is_first_layer = False
         self.model.add(conv_layer)
         if self.use_batchnorm:
@@ -238,7 +238,7 @@ class Training(object):
             self.model.add(Flatten())
             self.is_first_dense_layer = False
 
-        self.model.add(Dense(256, init=self.winit, W_regularizer=regularizer(self.wreg)))
+        self.model.add(Dense(output_size, init='normal', W_regularizer=regularizer(self.wreg)))
 
         if self.use_batchnorm:
             self.model.add(BatchNormalization())
