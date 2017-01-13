@@ -12,7 +12,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.callbacks import ReduceLROnPlateau
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2, activity_l2
-from keras.callbacks import TensorBoard, CSVLogger
+from keras.callbacks import CSVLogger
 from Common import load_svhn
 import numpy as np
 import pandas as pd
@@ -173,7 +173,6 @@ class Training(object):
         self.generator_options = {}
         self.lr = 0.01
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
-        self.tensorboard = TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=False, write_images=False)
         self.csv_logger = CSVLogger(self.output_file_stem + ".log")
 
 
@@ -186,7 +185,7 @@ class Training(object):
         reduce_learning_rate = ReduceLROnPlateau(monitor='val_loss', factor=factor, patience=patience, verbose=1, mode='auto', epsilon=0.0001, cooldown=cooldown, min_lr=min_lr)
         result.append(reduce_learning_rate)
 
-        for c in (self.tensorboard, self.model_checkpoint, self.csv_logger, self.tensorboard):
+        for c in (self.model_checkpoint, self.csv_logger):
             if not c is None:
                 result.append(c)
         return result
