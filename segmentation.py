@@ -4,6 +4,7 @@ from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import cProfile
 from MathUtils import levenshtein_distance
+from CharacterSource import AlphaNumericCharacterSource
 #pr = cProfile.Profile()
 #pr.enable()
 
@@ -119,10 +120,12 @@ def classify_character(img, x1, x2):
     char_image = img.crop((x1,0,x2,32)).resize((32,32), resample=Image.BILINEAR)
     char_data = prepare_image_for_classification(char_image)
     ans_vector = character_classifier.predict(char_data)[0]
-    ans = ans_vector.argmax()
-    probability = ans_vector[ans]
-    return str(ans), probability
+    ans_index = ans_vector.argmax()
+    probability = ans_vector[ans_index]
+    ans = classify_character.char_source.char_for_index(ans_index)
+    return ans, probability
 
+classify_character.char_source = AlphaNumericCharacterSource()
 
 def classify_characters(img, seg_array, threshold=0.1):
     text = ""
