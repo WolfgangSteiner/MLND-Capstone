@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageTransform
 import numpy as np
 import random
 import math
