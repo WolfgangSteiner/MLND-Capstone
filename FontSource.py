@@ -4,6 +4,7 @@ import os, glob
 from PIL import ImageFont
 from Font import Font
 import re
+import string
 
 class FontSource(object):
     font_blacklist = (
@@ -16,10 +17,14 @@ class FontSource(object):
         "Farisi", "Symbol", "Diwan Thuluth", "Diwan")
 
 
-    def __init__(self):
+    def __init__(self, full_alphabet=False):
         self.min_size = 0.75
         self.max_size = 1.0
         self.char_height = 32
+        self.full_alphabet = full_alphabet
+        self.calc_height_string = string.digits
+        if full_alphabet:
+            self.calc_height_string += string.ascii_letters
 
         try:
             print("Loading fonts from font_cache.pickle ...")
@@ -56,7 +61,7 @@ class FontSource(object):
 
         while text_height < self.char_height * 0.9:
             font = Font.from_ttf_file(font_file, font_size)
-            _,text_height = font.calc_text_size("0123456789")
+            _,text_height = font.calc_text_size(self.calc_height_string)
             font_size += 1
 
         return font_size - 1
