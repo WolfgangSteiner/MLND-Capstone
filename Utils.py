@@ -6,7 +6,8 @@ import time
 import urllib
 import shutil
 import cv2
-
+import tarfile
+from zipfile import ZipFile
 
 def mkdir(path):
     try:
@@ -66,3 +67,52 @@ def display_image(img_file):
     img = cv2.imread(img_file)
     cv2.imshow(img_file, img)
     cv2.waitKey(100)
+
+# from: http://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+def download_and_extract(dir_name, archive_name, url):
+    if not os.path.exists(dir_name):
+        if not os.path.exists(archive_name):
+            print("Downloading %s ..." % url)
+            download(url, archive_name)
+        else:
+            print("Found archive %s" % archive_name)
+
+        print("Upacking %s..." % archive_name)
+        if archive_name.endswith(".zip"):
+            zf = ZipFile(archive_name)
+            zf.extractall()
+        elif archive_name.endswith(".tar.gz"):
+            tf = tarfile.open(archive_name)
+            tf.extractall()
