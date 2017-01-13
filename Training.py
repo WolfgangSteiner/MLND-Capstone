@@ -299,7 +299,7 @@ class Training(object):
 
         if num_training is None:
             self.model.fit_generator(
-                generator, 16384, num_epochs,
+                generator, 2**17, num_epochs,
                 validation_data = (X_val, y_val),
                 nb_val_samples = None,
                 callbacks = self.callbacks(options),
@@ -340,7 +340,7 @@ class Training(object):
 
         if num_training is None:
             self.model.fit_generator(
-                generator, 16384, num_epochs,
+                generator, 2**17, num_epochs,
                 validation_data = (X_val, y_val),
                 nb_val_samples = None,
                 callbacks = self.callbacks(options),
