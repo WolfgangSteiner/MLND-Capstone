@@ -44,7 +44,8 @@ def svhn_generator(batch_size, for_display=False):
             key, (bx,by,w,h), label = source_data[current_index]
             img = open_image(key)
             img = img.crop((bx,by,bx+w,by+h))
-            img = img.resize((32,32), resample=Image.BICUBIC)
+            img = img.resize((32,32), resample=Image.BILINEAR)
+            img = img.convert('L')
 
             if for_display:
                 X.append(img)
@@ -57,7 +58,7 @@ def svhn_generator(batch_size, for_display=False):
         if for_display:
             yield X,y
         else:
-            yield np.array(X),to_categorical(y,10)
+            yield np.array(X).reshape((-1,32,32,1)),to_categorical(y,10)
 
 
 if args.plot:
@@ -72,15 +73,15 @@ if args.plot:
             overview_image.paste(img_array[i], (char_width*i, char_height*j))
             overview_draw.text((i * char_width, j * char_height + 10), str(y_array[i]))
 
-    overview_image.save("overview.png")
+    overview_image.save("svhn-overview.png")
 
 else:
     print "loading model..."
-    model=load_model("train014-new.hdf5")
+    model=load_model("test_classifier.hdf5")
     print model.metrics_names
 
     print "loading test data..."
-    gernerator = svhn_generator(args.n)
+    generator = svhn_generator(args.n)
     X,y = generator.next()
 
     print "evaluating model..."

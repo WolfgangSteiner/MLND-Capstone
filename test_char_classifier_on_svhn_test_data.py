@@ -1,4 +1,4 @@
-import Utils
+gimport Utils
 import os
 import sys
 from prepare_svhn_digit_data import prepare_svhn_digit_data

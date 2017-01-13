@@ -12,7 +12,6 @@ from timeit import default_timer as timer
 from Drawing import scale_image
 import os, shutil
 import Utils
-from MathUtils import levenshtein_distance
 import Levenshtein
 
 def quantize(a, q):
