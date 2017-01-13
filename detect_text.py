@@ -200,6 +200,7 @@ def test_image_file(file_path, label):
     draw_detected_text(result_img, result_array, label)
     draw_segmentation(result_img, result_array)
     result_img.save("result.png")
+    Utils.display_image("result.png")
     result_path = correct_dir if has_correct_label(result_array, label) else incorrect_dir
     result_path += '/' + os.path.basename(file_path)
     result_img.save(result_path)
