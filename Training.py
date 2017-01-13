@@ -169,7 +169,7 @@ class Training(object):
         self.winit = 'glorot_normal'
         self.wreg = 0.01
         self.use_batchnorm = True
-        self.output_file_stem = argv[0].split(".")[0]
+        self.output_file_stem = "models/" + argv[0].split(".")[0].replace("train-","")
         self.generator_options = {}
         self.lr = 0.01
         self.model_checkpoint = ModelCheckpoint(self.output_file_stem + ".hdf5", monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto')
