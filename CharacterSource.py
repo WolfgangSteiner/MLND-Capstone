@@ -14,6 +14,9 @@ class CharacterSource(object):
     def num_chars(self):
         return len(self.chars)
 
+    def char_for_index(self, index):
+        return self.chars[index]
+
 
 class NumericCharacterSource(CharacterSource):
     def __init__(self):
@@ -22,4 +25,4 @@ class NumericCharacterSource(CharacterSource):
 
 class AlphaNumericCharacterSource(CharacterSource):
     def __init__(self):
-        self.chars = '0123456789' + string.ascii_lowercase  + string.ascii_uppercase
+        self.chars = string.digits + string.ascii_lowercase  + string.ascii_uppercase
