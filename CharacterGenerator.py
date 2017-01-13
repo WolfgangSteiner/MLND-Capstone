@@ -9,6 +9,8 @@ from CharacterSource import NumericCharacterSource, AlphaNumericCharacterSource
 from FontSource import FontSource
 import Drawing
 from Point import Point
+import Utils
+import pickle
 
 
 char_height = 32
@@ -24,8 +26,6 @@ font_source = FontSource()
 
 
 def create_char(char_width, char_height, font, char, options={}):
-    left_aligned = options.get('left_aligned', False)
-    resize_char = options.get('resize_char', False)
     min_color_delta = options.get('min_color_delta', 32)
     canvas_width = char_width * 2
     canvas_height = char_height * 2
@@ -39,11 +39,7 @@ def create_char(char_width, char_height, font, char, options={}):
     text = char
     (w,h) = font.calc_text_size(text)
 
-    if left_aligned:
-        x = 0.5 * char_width + random.randint(-2,2)
-    else:
-        x = 0.5 * (canvas_width - w)
-
+    x = 0.5 * (canvas_width - w)
     y = 0.5 * (canvas_height - h)
 
     if random.random() > 0.5:
@@ -54,7 +50,7 @@ def create_char(char_width, char_height, font, char, options={}):
     if random.random() > 0.5:
         text = text + char_source.random_char()
 
-    x += (random.random() - 0.5) * 0.5 * (char_width - w)
+    x += random.randint(-2,2)
     y += (random.random() - 0.5) * (char_height - h)
 
     draw = ImageDraw.Draw(char_img)
@@ -65,10 +61,9 @@ def create_char(char_width, char_height, font, char, options={}):
 
     char_img = Image.alpha_composite(image, char_img)
     char_img = Drawing.random_rotate(char_img, options)
-    if not left_aligned and not resize_char:
-        char_img = Drawing.perspective_transform(char_img)
+    #char_img = Drawing.perspective_transform(char_img)
 
-    crop_width = w if resize_char else None
+    crop_width = w + random.randint(-2,2)
     char_img = Drawing.crop(char_img, crop_width)
     char_img = Drawing.random_blur(char_img, options)
     char_img = Drawing.add_noise(char_img, options)
@@ -76,18 +71,20 @@ def create_char(char_width, char_height, font, char, options={}):
 
 
 def CharacterGenerator(batchsize, options={}):
-    mean = options.get('mean', None)
-    std = options.get('std', None)
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
     else:
         char_source = NumericCharacterSource()
 
+    show_progress = options.get('show_progress', False)
+
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
+            if show_progress:
+                Utils.progress_bar(i+1, batchsize)
             font = font_source.random_font(options)
             char = char_source.random_char()
             char_img = create_char(char_width, char_height, font, char, options)
@@ -99,10 +96,19 @@ def CharacterGenerator(batchsize, options={}):
         yield np.array(x),to_categorical(y,char_source.num_chars())
 
 
+def generate_test_data(file_name, num_examples, options={}):
+    options['show_progress'] = True
+    gen = CharacterGenerator(num_examples, options)
+    X,y = gen.next()
+    with open(file_name, "wb") as f:
+        pickle.dump(X,f)
+        pickle.dump(y,f)
+
+
 if __name__ == "__main__":
     overview_image = Image.new("L", (char_width * num_char_columns, char_height * num_char_rows), 255)
     overview_draw = ImageDraw.Draw(overview_image)
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':5.0, 'min_noise':4, 'max_noise':4, 'resize_char':True}
+    options={'min_color_delta':16, 'min_blur':1.5, 'max_blur':3.5, 'max_rotation':15.0, 'min_noise':4, 'max_noise':8, 'resize_char':True, 'full_alphabet':False, 'add_background_lines':True}
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
