@@ -1,4 +1,3 @@
-from CharacterSequenceGenerator import create_char_sequence
 import numpy as np
 import pickle, sys, argparse
 from keras.models import load_model
@@ -25,17 +24,10 @@ character_classifier = load_model("train049-resize.hdf5")
 
 def prepare_image_for_classification(image):
     w,h = image.size
-    image_data = np.array(image).astype('float32')
-#    m = np.mean(image_data, axis=(0,1))
-#    s = np.std(image_data, axis=(0,1))
-#    image_data = (image_data - m) / s
+    image_data = np.array(image).astype('float32') / 255.0
     image_data = image_data.reshape(1,h,w,1)
     return image_data
 
-#    return Image.fromarray(image_data).convert('L')
-
-
-#def convert_image_for_classification(image):
 
 def check_segmentation(img):
     x = 0
@@ -210,7 +202,6 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
 
     for id,text in labels.iteritems():
         img = Image.open(data_dir + '/' + id + ".png")
-        #img,text = create_char_sequence(image_width, image_height, options)
         seg_array, score_array = segment_characters(img)
         predicted_text = classify_characters(img, seg_array)
 
