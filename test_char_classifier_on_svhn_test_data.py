@@ -22,4 +22,4 @@ if not os.path.exists(data_file):
         sys.exit(0)
 
 
-test_model("char_classifier_2.hdf5", data_file, 8192)
+test_model("models/classifier.hdf5", data_file, 8192)

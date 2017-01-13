@@ -15,13 +15,11 @@ num_char_rows = 32
 segmentation_width = 16
 segmentation_height = 32
 
-print "Loading segmentation classifier..."
-segmentation_classifier = load_model("seg006b-word_end.hdf5")
-print "Loading character classifier..."
-character_classifier = load_model("train049-resize.hdf5")
+print("Loading segmentation classifier...")
+segmentation_classifier = load_model("models/segmentation.hdf5")
 
-#segmentation_classifier = load_model("seg001.hdf5")
-
+print("Loading character classifier...")
+character_classifier = load_model("models/classifier.hdf5")
 
 def prepare_image_for_classification(image):
     w,h = image.size

@@ -18,9 +18,7 @@ import Levenshtein
 def quantize(a, q):
     return int(a/q) * q
 
-#char_detector = load_model("detection012-svhn-2.hdf5")
-#char_detector = load_model("detection013-new.hdf5")
-char_detector = load_model("detection.hdf5")
+char_detector = load_model("models/detection.hdf5")
 
 detector_size = Point(32,32)
 detector_overlap = 4
