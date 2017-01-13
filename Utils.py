@@ -37,16 +37,15 @@ def reporthook(count, block_size, total_size):
     duration = time.time() - start_time
     progress_size = int(count * block_size)
     speed = int(progress_size / (1024 * duration))
-    percent = int(count * block_size * 100 / total_size)
-    sys.stdout.write("\r%d, %d MB, %d KB/s" % (percent, progress_size / (1024 * 1024), speed))
-    sys.stdout.flush()
+    info = "%d/%d MB, %d KB/s" % (progress_size / (1024 * 1024), total_size / (1024 * 1024), speed)
+    progress_bar(count * block_size, total_size, additional_info = info)
 
 
 def download(url, filename):
     urllib.urlretrieve(url, filename, reporthook)
 
 
-def progress_bar(i, n, message=None, length=40):
+def progress_bar(i, n, message=None, length=40, additional_info = ""):
     percent = float(i) / n
     dots = int(percent * length)
     head = "" if message is None else message + ' ... '
@@ -57,6 +56,8 @@ def progress_bar(i, n, message=None, length=40):
         bar = '[' + '='*length + ']'
 
     bar += " %3.d%%" % (percent*100)
+    if len(additional_info):
+        bar +=  "  " + additional_info
     sys.stdout.write('\r' + head + bar)
     sys.stdout.flush()
     if i == n:
