@@ -150,7 +150,7 @@ def draw_segmentation(img, result_array):
         factor = 32.0 / rect.height()
         for s in seg_array:
             x = int(rect.x1 + s / factor)
-            draw.line((x, rect.y1, x, rect.y2), fill=(128,128,255), width=4)
+            draw.line((x, rect.y1, x, rect.y2), fill=(128,128,255), width=2)
 
 
 def draw_separate_candidates(img, rect_array):
