@@ -1,18 +1,9 @@
 import os
 import urllib
-from zipfile import ZipFile
 import Utils
 
-if not os.path.exists("fonts-master"):
-    if not os.path.exists("master.zip"):
-        print("Downloading fonts from https://github.com/google/fonts ...")
-        Utils.download("https://github.com/google/fonts/archive/master.zip", "master.zip")
-    else:
-        print("Found fonts archive master.zip")
 
-    print("Upacking fonts...")
-    zf = ZipFile("master.zip")
-    zf.extractall()
+Utils.download_and_extract("fonts-master", "master.zip", "https://github.com/google/fonts/archive/master.zip")
 
 
 from TextImageGenerator import create_test_images
