@@ -24,7 +24,7 @@ def show_lr():
 numplots = 3 if show_lr() else 2
 plt.rcParams.update({'font.size': 8})
 figure, ax = plt.subplots(nrows=numplots)
-figure.set_size_inches((7,5))
+figure.set_size_inches((7,4.8))
 #plt.subplot(111)
 data=[]
 for f in names:
