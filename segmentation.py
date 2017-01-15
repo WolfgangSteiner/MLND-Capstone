@@ -3,15 +3,15 @@ import pickle, sys, argparse
 from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageTransform, ImageChops
 import cProfile
-from MathUtils import levenshtein_distance
 from CharacterSource import AlphaNumericCharacterSource
+import Levenshtein
 #pr = cProfile.Profile()
 #pr.enable()
 
-image_width = 1200
 image_height = 32
-num_char_columns = 4
+num_char_columns = 2
 num_char_rows = 32
+image_width = num_char_columns * 32 * 8
 segmentation_width = 16
 segmentation_height = 32
 
@@ -61,14 +61,13 @@ def expand_image_for_segmentation(img):
 
 
 def segment_characters(img, threshold=0.35):
-    #img = prepare_image_for_classification(img)
     expanded_image = expand_image_for_segmentation(img)
     (w,h) = expanded_image.size
     x = 0
     is_in_run = False
     x_start = 0
     last_score = 0
-    a = 0.99
+    a = 0.5
     b = 1.0 - a
     filtered_score = 0
     seg_array = []
@@ -99,13 +98,16 @@ def segment_characters(img, threshold=0.35):
 def draw_segmentation(img, seg_array):
     draw = ImageDraw.Draw(img)
     for x in seg_array:
-        draw.line(((x,0),(x,32)), fill=(0,255,0))
+        draw.line(((x,0),(x,32)), fill=(128,128,255), width=2)
 
 
 def draw_score(img, score_array):
     draw = ImageDraw.Draw(img)
-    for x,y in score_array:
-        draw.point((x,y), fill=(255,0,0))
+
+    for i in range(0,len(score_array)-1):
+        x1,y1 = score_array[i]
+        x2,y2 = score_array[i+1]
+        draw.line(((x1,y1),(x2,y2)), fill=(255,0,0))
 
 
 def draw_answer(img, text, predicted_text):
@@ -173,7 +175,7 @@ def draw_chars(img, seg_array):
         char_image = img.crop((x1,0,x2,char_height))
         char_image = char_image.resize((char_width,char_height),resample=Image.BILINEAR)
         result.paste(char_image, (xi, 0))
-        draw.line(((xi,0),(xi,32)), fill=(0,255,0))
+        draw.line(((xi,0),(xi,32)), fill=(128,128,255), width=2)
         xi += char_width
 
     return result
@@ -185,7 +187,7 @@ def predict_word(img):
 
 
 def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
-    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':0.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
+    options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':0.5, 'max_rotation':2.5, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
     n = 0
     correct_predictions = 0
     file = open(data_dir + '/' + 'labels.pickle', 'rb')
@@ -213,12 +215,12 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
             char_image = draw_chars(img, seg_array)
             draw_score(img, score_array)
             draw_segmentation(img, seg_array)
-            draw_answer(img, text, predicted_text)
+            draw_answer(char_image, text, predicted_text)
             overview_image.paste(img, (x, y))
             overview_image.paste(char_image, (x, y + image_height))
 
         num_digits += len(text)
-        distance = levenshtein_distance(text, predicted_text)
+        distance = Levenshtein.distance(text, predicted_text)
         num_correct_digits += len(text) - min(distance,len(text))
         accuracy = float(num_correct_digits)/num_digits
 
