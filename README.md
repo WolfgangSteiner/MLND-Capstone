@@ -4,7 +4,7 @@ pipeline based on a sliding window algorithm that is able to automatically detec
 text (digits) in images. The CNN classifiers used in the pipeline have been trained on images synthesized from
 a large collection of fonts. A demo application is included that detects/transcribes digits from a webcam.
 
-![](https://github.com/WolfgangSteiner/MLND-Capstone/blob/master/latex/fig/screenshots/03e8512f-35b8-4446-bc66-e0034f329101.png)
+![](https://github.com/WolfgangSteiner/MLND-Capstone/blob/master/latex/fig/screenshots/861d0c35-3c77-4c95-8546-88976d6f2818.png)
 
 
 # Instructions
