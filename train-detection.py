@@ -1,17 +1,15 @@
 from Training import Training
 t = Training(input_shape=[32,32,1])
-t.conv(32,5)
-t.conv(32,5)
+t.use_batchnorm = False
+t.wreg=0.0
+t.lr = 0.001
+t.conv(16,3)
 t.maxpool()
-t.conv(64,5)
-t.conv(64,5)
+t.conv(32,3)
 t.maxpool()
-t.conv(128,5)
-t.conv(128,5)
-t.maxpool()
-t.dense(512)
-t.dropout(0.5)
-t.dense(512)
-t.dropout(0.5)
+t.dense(128)
+t.dense(128)
 t.binary_classifier()
-t.train_detection_generator(options={'lr_patience':16, 'lr_cooldown':8, 'max_blur':1.5, 'max_rotation':5, 'add_background_lines':False, 'std':1.0, 'mean':0.0})
+options={'min_color_delta':8, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':15.0, 'min_noise':4, 'max_noise':8}
+options['num_epochs'] = 200
+t.train_detection_generator(options=options)
