@@ -276,13 +276,12 @@ class Training(object):
 
 
     def train_generator(self, options={}):
-        epoch_offset = 0
+        epoch_offset = 02
 
         if "--continue" in argv:
             print("Continuing training...")
-            file_stem = argv[0].split(".")[0]
-            self.model = load_model(file_stem + ".hdf5")
-            res = pd.read_csv(file_stem + ".log")
+            self.model = load_model(self.output_file_stem + ".hdf5")
+            res = pd.read_csv(self.output_file_stem + ".log")
             num_trained_epochs = len(res)
             last_lr = res['lr'][num_trained_epochs - 1]
             self.csv_logger.append = True
@@ -321,9 +320,8 @@ class Training(object):
     def train_segmentation_generator(self, options={}):
         if "--continue" in argv:
             print("Continuing training...")
-            file_stem = argv[0].split(".")[0]
-            self.model = load_model(file_stem + ".hdf5")
-            res = pd.read_csv(file_stem + ".log")
+            self.model = load_model(self.output_file_stem + ".hdf5")
+            res = pd.read_csv(self.output_file_stem + ".log")
             num_trained_epochs = len(res)
             last_lr = res['lr'][num_trained_epochs - 1]
             self.csv_logger.append = True
@@ -362,9 +360,8 @@ class Training(object):
     def train_detection_generator(self, options={}):
         if "--continue" in argv:
             print("Continuing training...")
-            file_stem = argv[0].split(".")[0]
-            self.model = load_model(file_stem + ".hdf5")
-            res = pd.read_csv(file_stem + ".log")
+            self.model = load_model(self.output_file_stem + ".hdf5")
+            res = pd.read_csv(self.output_file_stem + ".log")
             num_trained_epochs = len(res)
             last_lr = res['lr'][num_trained_epochs - 1]
             self.csv_logger.append = True
@@ -380,7 +377,7 @@ class Training(object):
 
         if num_training is None:
             self.model.fit_generator(
-                generator, 16384, num_epochs,
+                generator, 2**17, num_epochs,
                 validation_data = (X_val, y_val),
                 nb_val_samples = None,
                 callbacks = self.callbacks(options),
@@ -403,9 +400,8 @@ class Training(object):
     def train_detection_generator_new(self, options={}):
         if "--continue" in argv:
             print("Continuing training...")
-            file_stem = argv[0].split(".")[0]
-            self.model = load_model(file_stem + ".hdf5")
-            res = pd.read_csv(file_stem + ".log")
+            self.model = load_model(self.output_file_stem + ".hdf5")
+            res = pd.read_csv(self.output_file_stem + ".log")
             num_trained_epochs = len(res)
             last_lr = res['lr'][num_trained_epochs - 1]
             self.csv_logger.append = True
@@ -446,9 +442,8 @@ class Training(object):
     def train_svhn_detection(self, options={}):
         if "--continue" in argv:
             print("Continuing training...")
-            file_stem = argv[0].split(".")[0]
-            self.model = load_model(file_stem + ".hdf5")
-            res = pd.read_csv(file_stem + ".log")
+            self.model = load_model(self.output_file_stem + ".hdf5")
+            res = pd.read_csv(self.output_file_stem + ".log")
             num_trained_epochs = len(res)
             last_lr = res['lr'][num_trained_epochs - 1]
             self.csv_logger.append = True
@@ -465,7 +460,7 @@ class Training(object):
 
         if num_training is None:
             self.model.fit_generator(
-                generator, 16384, num_epochs,
+                generator, 2**17, num_epochs,
                 validation_data = (X_val, y_val),
                 nb_val_samples = None,
                 callbacks = self.callbacks(options),
