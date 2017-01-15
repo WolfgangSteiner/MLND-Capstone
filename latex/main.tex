@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+\documentclass[11pt]{article}
 %\usepackage[scaled]{helvet}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
@@ -9,12 +9,14 @@
 %\renewcommand{\baselinestretch}{1.1}
 \usepackage[letterpaper, margin=1in]{geometry}
 \usepackage{listings}
+\usepackage{gensymb}
 \lstset{basicstyle=\tiny,language=Python}
 
 \newcommand\figref[1]{Fig.~\ref{fig:#1}}
+\newcommand\secref[1]{Section~\ref{sec:#1}}
 
 \title{Udacity Machine Learning Nanodegree\\ CAPSTONE: Photo OCR Prototype}
-\author{Wolfgang Steiner \\ \small{wolfgang.steiner@gmail.com}}
+\author{Wolfgang Steiner, Dr.-Ing. \\ \small{wolfgang.steiner@gmail.com}}
 \date{January 2017}
 
 \begin{document}
@@ -199,6 +201,7 @@ will approach zero if the respective input window does not contain text and one 
 \end{figure}
 
 \subsection{Character Segmentation}
+\label{sec:segmentation_algorithm}
 Character segmentation is based on a one-dimensional sliding window algorithm. In order to
 increase the spacial accuracy of the algorithm and to reduce the number of false positives
 for very narrow characters, the width to the sliding window is halved to 16~pixels in comparison
@@ -225,11 +228,11 @@ the center of the peaks of the classifier activations (cf.~\figref{segmentation}
     \centering
     \includegraphics[width=1.1\linewidth]{fig/segmentation}
     \caption{
-      Examples of the character segmentation. The top row of each example shows the input
-      image. The score of the segmentation classifier is visualized in red, with each dot representing
-      the output for one sliding window iteration. The resulting character border is shown in green.
+      Examples results of character segmentation. The top row of each example shows the input
+      image. The filtered activation of the segmentation classifier is visualized in red,
+      while the inferred character boundaries are marked in light blue.
       The bottom row shows the character images that have been extracted and rescaled based on the
-      segmentation. These images are then fed into the character classifier. }
+      segmentation. These 32x32~pixel sized images are then fed into the character classifier. }
     \label{fig:segmentation}
 \end{figure}
 
@@ -257,7 +260,8 @@ and not on the whole input image.
 \subsection{Character Classification}
 In comparison, the final stage of the OCR pipeline is rather straight-forward. At this point
 in time, a list of character boundaries is available for each text bounding box. From this list,
-the pixel data for each character candidate is rescaled to an image of size 32x32~pixels.
+the pixel data for each character candidate is rescaled to an image of size 32x32~pixels and
+normalized to values of range $[0,1]$.
 
 The architecture of the character classifier is shown in \figref{classifier_cnn} and is
 quite similar to the segmentation classifier. The structure of the convolutional layers is
@@ -279,30 +283,110 @@ with ten entries which can be interpreted as the probabilities for the ten diffe
 
 
 \section{Methodology}
-In order to implement the OCR system, a bottom-up approach was used. First, the character generator
-was implemented in order to synthesize training images (\figref{training_images}, top)
+In order to implement the OCR system, I followed a bottom-up approach. First, I implemented
+the character generator capable of synthesizing training images (\figref{training_images}, top)
 for the character classifier (\figref{classifier_cnn}). In order to facilitate easy and rapid
-experimentation, a simple front-end was implemented that allows
-for concise and expressive definitions of CNN architectures. Training data is synthesized online
-during training on multiple CPU threads, using a keras generator. The classifier was trained
-on a GPU (GTX 1080) using the Adam optimizer \cite{Kingma2014} and a batch size of 128.
+experimentation, I also implemented a simple front-end DSL based on keras \cite{KerasDoc40:online} that allows
+for concise and expressive definitions of CNN architectures. This greatly simplified the
+process of finding a suitable CNN architecture which started with a simple model with only
+two convolutional layers that was successively extended by adding more convolutional layers
+and increasing their filter depth. The final architecture can be seen in \figref{classifier_cnn}.
+
+Training data is synthesized online during training on multiple CPU threads, using a keras generator. The classifier was trained
+on a GPU (GTX~1080) using the Adam optimizer \cite{Kingma2014} and a batch size of 128.
 Preprocessing simply involved normalizing the pixel values to a range of $[0, 1]$ and one-hot encoding
-the labels. The epoch size is set to a rather high value of $2^{17}$ and the accuracy and categorical
-cross-entropy loss on a validation set of 2048 pre-generated images is calculated. The learning rate is empirically
-set to the highest value that still results in fast initial training progress and is then
+the labels. The epoch size is set to a rather high value of $2^{17}$,
+which results in a training time of about one minute per epoch on the GPU.
+After each epoch, the accuracy and categorical cross-entropy loss on a validation set of
+2048 pre-generated images is calculated.
+The learning rate is empirically set to the highest value that still results in fast initial training progress and is then
 successively reduced whenever the validation loss does not improve for more than four epochs.
 
-%%\lstinputlisting[float,caption={Implementation of the character classifier CNN.},label={listing:classifier_cnn}]{../train-classifier.py}
+One big advantage of training the classifier from randomly generated data is that overfitting
+is effectively avoided as each training example is uniquely synthesized. Because of this,
+regularization measures such as dropout \cite{Srivastava2014} or weight regularization proved not to be essential
+in order to train a model that generalizes well. Another advantage is that it easily becomes
+possible to overtrain the classifier with data that is more demanding than the one it will
+encounter during deployment. Here, training examples are generated that have a higher degree
+of blurring (radius of 2.5 vs.~1.5) and that are rotated further from the upright position
+($15\degree$ vs.~$7.5\degree$)
+than will probably be encountered as part of the OCR system.
 
-\section{Results}
-\begin{figure}[ht!]
+%\lstinputlisting[float,caption={Implementation of the character classifier CNN.},label={listing:classifier_cnn}]{../train-classifier.py}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics{fig/learning_curve}
+  \caption{
+    Learning curves for training of the character classifier:
+    accuracy (top), loss (center) and learning rate (bottom) plotted as functions of
+    the number of epochs.
+    \label{fig:learning_curve}
+  }
+\end{figure}
+
+In order to monitor training progress and also to compare training of different CNN architectures,
+I made extensive use of learning curves like the one shown in \figref{learning_curve}.
+Here, accuracy and loss are compared both for the training and the validation set as functions
+of the number of epochs. Note that in this case, both the test and the validation accuracy
+have very similar values throughout the training process,
+which shows that overfitting is effectively avoided through
+the use of randomly synthesized training data. Also plotted in \figref{learning_curve} (bottom)
+is the learning rate. It can be clearly seen how the learning rate is reduced successively
+whenever the validation accuracy fails to improve further.
+
+After training for 200 epochs and about six hours, the learning rate has been reduced to $\approx 10^{-9}$ and training progress
+has effectively ceased. Evaluating a randomly generated test set of 8192 characters yields
+an accuracy of 98.16\%. In order to further justify the above described training methodology,
+the character classifier was used to evaluate the test set of the google street view house numbers dataset
+\cite{Netzer2011,TheStree9:online}. Some examples from this dataset are show in \figref{svhn_data}.
+The dataset consists of 26032 images that were cropped from photos taken by the
+google street view project and are evidently of a very challenging quality, with many examples that are heavily blurred to a
+degree that would not be encountered by an OCR system. Despite this, the character classifier
+achieves an accuracy of 83.83\% after training only on synthetic data.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1.0\linewidth]{fig/svhn_test}
+  \caption
+  {
+    Example images from the google street view house numbers test dataset \cite{Netzer2011,TheStree9:online}.
+  }
+  \label{fig:svhn_data}
+\end{figure}
+
+In a second step, I started to work on character segmentation. For this, new training
+data was needed: the character segmentation classifier's output should have a high
+activation when the gap between two characters is present in the center of its
+16x32~pixel input window and, conversely a low activation when a character is in the
+center of the window or if no character is present at all.
+Accordingly I implemented a variation of the character generator that will generate
+randomly synthesized images with these specifications (cf.~\figref{training_images}, center).
+
+The CNN segmentation classifier (cf.~\figref{segmentation_cnn}) was trained in a very similar way as described above for the
+character classifier. Testing the fully trained segmentation classifier on a test dataset consisting
+of 8192 randomly generated segmentation examples results in an accuracy of 95.04\%.
+As for the character classifier, the segmentation classifier was also trained on examples
+that were blurred to a higher degree (blur radius of 2.5 vs.~ 1.5) and were rotated at a higher
+maximal angle ($15\degree$ vs.~$7.5\degree$) than would be expected in deployment, thus
+yielding a higher test accuracy than for the validation set (90.28\%).
+
+After implementing the sliding window algorithm for character segmentation discussed in
+\secref{segmentation_algorithm}, the performance of character segmentation and classification
+working together could be tested for the first time. For this, I implemented a generator
+for random digit strings with a height of 32~pixels. Some examples for these test images,
+together with the filtered activation of the segmentation classifier and the resulting
+character boundaries and character images for classification were already shown in
+\figref{segmentation}.
+
   \begin{itemize}
-    \item Accuracy of the character classifier on generated test data: 97.49\%.
-    \item Accuracy of the character classifier on the svhn test data: 84.41\%.
-    \item Accuracy of the segmentation classifier on generated test data: 94.70\%.
+    \item Accuracy on segmentation examples: 0.950360.
     \item Accuracy of the detection classifier on generated test data: 95.61\%.
 
   \end{itemize}
+
+\section{Results}
+\begin{figure}[ht!]
 
     \centering
     \makebox[\textwidth][c]
@@ -318,8 +402,8 @@ successively reduced whenever the validation loss does not improve for more than
         \includegraphics[width=0.35\linewidth]{fig/good_examples_pipeline/c572f505-791b-45be-bf60-9761fd9eb1b6}
     }
     \caption{Examples of correctly transcribed digit strings. Red rectangles are positive classifications of the
-    character detection classifier. The green rectangle corresponds to the bounding box calculated as the union
-    of the red rectangles. Boundaries between characters inferred by the segmentation algorithm are drawn in light blue.}
+    character detection classifier. The green rectangles corresponds to the bounding boxes calculated as the union
+    of the red rectangles. Boundaries between characters, inferred by the segmentation algorithm, are drawn in light blue.}
     \label{fig:good_examples_pipeline}
 \end{figure}
 

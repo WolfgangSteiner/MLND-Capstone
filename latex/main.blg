@@ -5,45 +5,45 @@ The style file: ieeetr.bst
 Database file #1: main.bib
 Database file #2: web.bib
 Warning--empty journal in Girshick2013
-You've used 7 entries,
+You've used 13 entries,
             1876 wiz_defined-function locations,
-            515 strings with 4629 characters,
-and the built_in function-call counts, 1269 in all, are:
-= -- 106
-> -- 69
+            548 strings with 5509 characters,
+and the built_in function-call counts, 2512 in all, are:
+= -- 237
+> -- 105
 < -- 0
-+ -- 26
-- -- 19
-* -- 88
-:= -- 201
-add.period$ -- 9
-call.type$ -- 7
-change.case$ -- 7
++ -- 41
+- -- 28
+* -- 158
+:= -- 361
+add.period$ -- 18
+call.type$ -- 13
+change.case$ -- 13
 chr.to.int$ -- 0
-cite$ -- 8
-duplicate$ -- 60
-empty$ -- 131
-format.name$ -- 19
-if$ -- 301
+cite$ -- 14
+duplicate$ -- 117
+empty$ -- 267
+format.name$ -- 28
+if$ -- 619
 int.to.chr$ -- 0
-int.to.str$ -- 7
-missing$ -- 5
-newline$ -- 26
-num.names$ -- 5
-pop$ -- 35
+int.to.str$ -- 13
+missing$ -- 8
+newline$ -- 47
+num.names$ -- 8
+pop$ -- 67
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 26
+skip$ -- 69
 stack$ -- 0
-substring$ -- 23
-swap$ -- 12
+substring$ -- 98
+swap$ -- 33
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 1
-while$ -- 9
-width$ -- 8
-write$ -- 60
+while$ -- 21
+width$ -- 15
+write$ -- 112
 (There was 1 warning)
