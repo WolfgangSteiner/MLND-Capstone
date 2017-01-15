@@ -6,12 +6,13 @@ import Utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--purge', action="store_true")
+parser.add_argument('--num-examples', action='store', type=int, default=20)
 args = parser.parse_args()
 
 def create_test_set(name, max_rotation, max_blur):
     if not os.path.exists(name):
         print("Creating test set %s..." % name)
-        create_test_images(name, max_rotation, 64, max_blur=max_blur, n=512)
+        create_test_images(name, max_rotation, 64, max_blur=max_blur, n=args.num_examples)
         print("")
 
 test_sets = [\
@@ -33,7 +34,7 @@ for name,_,_,detector_scaling_factor,detector_overlap,detector_threshold in test
     results.append(test_ocr(name, detector_scaling_factor=detector_scaling_factor, detector_overlap=detector_overlap, detector_threshold=detector_threshold))
 
 
-print ("%-25s %+5s %+11s %+10s %+10s %+10s %+10s" % ("Test Set", "N", "Accuracy", "Time", "Factor", "Overlap", "Threshold"))
-print ("="*70)
+print ("%-25s %+5s %+11s %+6s %+7s %+9s %+10s" % ("Test Set", "N", "Accuracy", "Time", "Factor", "Overlap", "Threshold"))
+print ("="*80)
 for r in results:
-    print ("%-25s %5.0d %10.2f%% %10.0f %f %f %f" % r)
+    print ("%-25s %5.0d %10.2f%% %6.0f   %.3f     %.3f      %.3f" % r)

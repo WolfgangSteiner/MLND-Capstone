@@ -54,13 +54,8 @@ def create_char_sequence(image_width = 128, image_height = 32, options={}):
     char_image = Drawing.add_noise(char_image, options)
     return char_image, text
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
-    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
-    parser.add_argument("--save", help="save image as png along with a pickle of the labels", action="store_true")
-    args = parser.parse_args()
 
+def create_segmentation_examples(data_dir, n):
     image_width = 256
     image_height = 32
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
@@ -70,26 +65,23 @@ if __name__ == "__main__":
     if full_alphabet:
         char_source = AlphaNumericCharacterSource()
 
-    if args.save:
-        labels = {}
-        mkdir(args.data_dir)
-        for i in range(args.n):
-            Utils.progress_bar(i+1, args.n)
-            id = str(uuid.uuid4())
-            char_image, label = create_char_sequence(image_width, image_height, options)
-            labels[id] = label
-            char_image.save(args.data_dir + "/" + id + ".png")
-        file = open(args.data_dir + '/' + 'labels.pickle', 'wb')
-        print
-        print ("Writing labels.pickle ...")
-        pickle.dump(labels, file, -1)
+    labels = {}
+    mkdir(data_dir)
+    for i in range(n):
+        Utils.progress_bar(i+1, n)
+        id = str(uuid.uuid4())
+        char_image, label = create_char_sequence(image_width, image_height, options)
+        labels[id] = label
+        char_image.save(data_dir + "/" + id + ".png")
+    file = open(data_dir + '/' + 'labels.pickle', 'wb')
+    print ("Writing labels.pickle ...")
+    pickle.dump(labels, file, -1)
 
-    else:
-        overview_image = Image.new("L", (image_width * num_char_columns, image_height * num_char_rows), 255)
-        overview_draw = ImageDraw.Draw(overview_image)
-        for j in range(0,num_char_rows):
-            for i in range(0,num_char_columns):
-                char_image, label = create_char_sequence(image_width, image_height, options)
-                overview_image.paste(char_image, (image_width*i, image_height*j))
 
-        overview_image.save("overview.png")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
+    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
+    parser.add_argument("--save", help="save image as png along with a pickle of the labels", action="store_true")
+    args = parser.parse_args()
+    create_segmentation_examples(args.data_dir, args.n)

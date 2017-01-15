@@ -236,7 +236,8 @@ def test_segmentation(max_num=1024*1024, visualize=False, data_dir="data"):
     if visualize:
         overview_image.save("overview.png")
 
-    print "Accuracy: %f" % (accuracy)
+    print("")
+    print("Accuracy: %f" % (accuracy))
 
 
 if __name__ == "__main__":
