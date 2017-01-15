@@ -134,8 +134,8 @@ def prepare_svhn_digit_data(dir):
     X = np.array(X)
     y = to_categorical(np.array(y), 10)
 
-    with open("char_classifier_%s_svhn.pickle" % (dir), "wb") as f:
-        print("Writing data to char_classifier_%s_svhn.pickle..." % (dir))
+    with open("%s.pickle" % (dir), "wb") as f:
+        print("Writing data to %s.pickle..." % (dir))
         pickle.dump(X, f)
         pickle.dump(y, f)
 
