@@ -38,7 +38,7 @@ def draw_segmentation(cv_img, result_array):
         factor = 32.0 / r.height()
         for s in seg_array:
             x = int(r.x1 + s / factor)
-            cv2.line(cv_img, (x, int(r.y1)), (x, int(r.y2)), color=(255,128,128), thickness=4)
+            cv2.line(cv_img, (x, int(r.y1)), (x, int(r.y2)), color=(255,128,128), thickness=2)
 
 
 def save_screenshot(cv_img):
@@ -64,15 +64,15 @@ while(True):
     if is_first:
         print "Image size: %d, %d" % (image.size[0],image.size[1])
         is_first = False
+        max_factor = 640.0 / image.size[0]
+        min_factor = max_factor * 0.1
 
-    max_factor = 1.0
-    min_factor = max_factor * 0.1
     result_array, rect_array = scan_image(\
         image, max_factor, min_factor,\
-        detector_scaling_factor=0.75, detector_overlap=2, detector_threshold=0.85)
+        detector_scaling_factor=0.75, detector_overlap=2.5, detector_threshold=0.75)
 
-    draw_detection(frame, rect_array)
-    draw_segmentation(frame, result_array)
+    #draw_detection(frame, rect_array)
+    #draw_segmentation(frame, result_array)
     draw_answers(frame, result_array)
 
     # Display the resulting frame
