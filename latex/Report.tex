@@ -559,9 +559,9 @@ correctly.
 
 As part of this project a proof-of-concept demo was implemented that detects and transcribes
 strings of digits using a webcam. Example screenshots of this demo in action are shown in \figref{webcam}.
-As can be seen, the system works in principle and successfully detects and transcribes digit sequences at
-different angles of rotation (top left) and (top right)). It even
-shows some resiliency against clutter in the image (bottom left) and even manages
+As can be seen, the system works in principle and successfully detects and transcribes
+horizontally aligned digit sequences (top left) but decreases in accuracy for rotated
+text (top right). It shows some resiliency against clutter in the image (bottom left) and even manages
 to successfully transcribe a handwritten digit sequence (bottom right) in some cases.
 Regrettably, performance is lacking: even when running the OCR pipeline on a mid-range GPU (GTX 1060),
 the system struggles to deliver an acceptable frame rate.
@@ -581,7 +581,7 @@ the system struggles to deliver an acceptable frame rate.
     \caption
     {
       Screenshots of the proof-of-concept implementation of a text detection system using
-      a webcam. Successful text detection (top left, top right) for different angles of rotation.
+      a webcam. Successful text detection (top left), reduced accuracy for rotated text (top right).
       Successful text detection in an image cluttered by high contrast edges (bottom left).
       Successful text detection of a handwritten number string (bottom right).
     }
