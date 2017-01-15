@@ -3,7 +3,7 @@ import pickle
 from keras.models import load_model
 
 
-def test_model(model_file_name, data_file_name, n):
+def test_model(model_file_name, data_file_name, n=None):
     print("loading model %s ..." % model_file_name)
     model=load_model(model_file_name)
 
