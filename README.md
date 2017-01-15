@@ -8,7 +8,7 @@ a large collection of fonts. A demo application is included that detects/transcr
 
 
 # Instructions
-* ![Report.pdf](https://github.com/WolfgangSteiner/MLND-Capstone/blob/master/Report.pdf)
+* [Report.pdf](Report.pdf)
 * Execute `prepare_project.py`, which will download and extract fonts from https://github.com/google/fonts and will create
 a font cache.
 * Run `demo.py` with a webcam connected to the computer. Digits will be detected/transcribed in the webcam feed. **Requires GPU!**
