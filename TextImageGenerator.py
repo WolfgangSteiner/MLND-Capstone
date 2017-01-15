@@ -84,12 +84,12 @@ def create_text_image(image_width = 640, image_height = 480, options={}):
     return image, text
 
 
-def create_test_images(dir, max_rotation=2.5, max_noise_scale=1, n=100):
+def create_test_images(dir, max_rotation=2.5, max_noise_scale=1, max_blur=1.5, n=100):
     options = \
     { \
         'min_color_delta':16.0, \
         'min_blur':0.5, \
-        'max_blur':1.5, \
+        'max_blur':max_blur, \
         'max_rotation':max_rotation, \
         'min_noise':4, \
         'max_noise':16, \
@@ -102,15 +102,13 @@ def create_test_images(dir, max_rotation=2.5, max_noise_scale=1, n=100):
     Utils.mkdir(dir)
     labels = {}
     for i in range(n):
-        Utils.progress_bar(i+1,n, message=dir)
+        Utils.progress_bar(i+1,n)
         id = str(uuid.uuid4())
         char_image, label = create_text_image(640, 480, options)
         labels[id] = label
         char_image.save(dir + "/" + id + ".png")
 
     with open(dir + '/' + 'labels.pickle', 'wb') as f:
-        print
-        print ("Writing labels.pickle ...")
         pickle.dump(labels, f, -1)
 
 
@@ -120,5 +118,6 @@ if __name__ == "__main__":
     parser.add_argument('--max-noise-scale', action="store", dest="max_noise_scale", type=int, default=64)
     parser.add_argument('--max-rotation', action="store", dest="max_rotation", type=float, default=2.5)
     parser.add_argument('--directory', action='store', dest='data_dir', default='data')
+    parser.add_argument('--max-blur', action='store', dest='max_blur', type=float, default='1.5')
     args = parser.parse_args()
-    create_test_images(args.data_dir, args.max_rotation, args.max_noise_scale, args.n)
+    create_test_images(args.data_dir, args.max_rotation, args.max_noise_scale, max_blur=args.max_blur, n=args.n)
