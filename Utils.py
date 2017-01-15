@@ -38,14 +38,14 @@ def reporthook(count, block_size, total_size):
     progress_size = int(count * block_size)
     speed = int(progress_size / (1024 * duration))
     info = "%d/%d MB, %d KB/s" % (progress_size / (1024 * 1024), total_size / (1024 * 1024), speed)
-    progress_bar(count * block_size, total_size, additional_info = info)
+    progress_bar(count * block_size, total_size, unit="MB")
 
 
 def download(url, filename):
     urllib.urlretrieve(url, filename, reporthook)
 
 
-def progress_bar(i, n, message=None, length=40, additional_info = ""):
+def progress_bar(i, n, message=None, length=40, absolute_numbers=True, unit=""):
     percent = float(i) / n
     dots = int(percent * length)
     head = "" if message is None else message + ' ... '
@@ -56,8 +56,10 @@ def progress_bar(i, n, message=None, length=40, additional_info = ""):
         bar = '[' + '='*length + ']'
 
     bar += " %3.d%%" % (percent*100)
-    if len(additional_info):
-        bar +=  "  " + additional_info
+
+    if absolute_numbers:
+        bar += "  %d/%d %s" % (i,n,unit)
+
     sys.stdout.write('\r' + head + bar)
     sys.stdout.flush()
     if i == n:
@@ -116,4 +118,8 @@ def download_and_extract(dir_name, archive_name, url):
             zf.extractall()
         elif archive_name.endswith(".tar.gz"):
             tf = tarfile.open(archive_name)
-            tf.extractall()
+            if "/" in dir_name:
+                extract_path = os.path.dirname(dir_name)
+            else:
+                extract_path = "."
+            tf.extractall(extract_path)
