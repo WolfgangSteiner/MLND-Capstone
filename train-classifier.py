@@ -17,4 +17,5 @@ t.dense(1024)
 t.dense(1024)
 t.classifier(10)
 options={'min_color_delta':8, 'min_blur':0.5, 'max_blur':2.5, 'max_rotation':15.0, 'min_noise':4, 'min_size':0.5, 'max_size':1.0, 'max_noise':8, 'full_alphabet':False}
+options['num_epochs'] = 200
 t.train_generator(options=options)
