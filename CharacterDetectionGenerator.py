@@ -7,6 +7,8 @@ from Rectangle import Rectangle
 from Point import Point
 import Drawing
 from MathUtils import random_offset
+import Utils
+import pickle
 
 num_char_columns = 32
 num_char_rows = 16
@@ -80,18 +82,31 @@ def CharacterDetectionGenerator(batchsize, options={}):
     image_width = options.get('image_width', 32)
     image_height = 32
     full_alphabet = options.get('full_alphabet', False)
+    show_progress = options.get("show_progress", False)
     char_source = AlphaNumericCharacterSource() if full_alphabet else NumericCharacterSource()
 
     while True:
         x = []
         y = []
         for i in range(0,batchsize):
+            if show_progress:
+                Utils.progress_bar(i+1, batchsize)
             image, label = create_detection_example(image_width, image_height, options)
             image_data = np.array(image).astype('float32')/255.0
             x.append(image_data.reshape(image_height,image_width,1))
             y.append(label)
 
-        yield np.array(x),y
+        yield np.array(x),np.array(y)
+
+
+def generate_test_data(file_name, num_examples, options={}):
+    options['show_progress'] = True
+    gen = CharacterDetectionGenerator(num_examples, options)
+    X,y = gen.next()
+    with open(file_name, "wb") as f:
+        pickle.dump(X,f)
+        pickle.dump(y,f)
+
 
 
 if __name__ == "__main__":
