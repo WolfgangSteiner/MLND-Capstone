@@ -9,13 +9,16 @@ a large collection of fonts. A demo application is included that detects/transcr
 
 # Instructions
 * Execute `prepare_project.py`, which will download and extract fonts from https://github.com/google/fonts and will create
-test images for the OCR pipeline.
-* Run text detection on the test data with `test_ocr.py`.
+a font cache.
 * Run `demo.py` with a webcam connected to the computer. Digits will be detected/transcribed in the webcam feed. **Requires GPU!**
+* Test the whole OCR pipeline with `test_ocr.py`. This will randomly create images with digit sequences that are then detected/transcribed.
+* Test the character segmentation on randomly generated text bounding boxes with `test_segmentation.py`. Will place test images in `TestImagesSegmentation`.
+* Test the separate classifiers with `test_classifiers.py`, randomly generated test images are generated. Some examples are collected in `test/classifier.png`, `test/segmentation.png` and `test/detection.png`.
+* Test the character classifier on svhn test images: `test_char_classifier_on_svhn_test_data.py`. This will download `test.tar.gz` from http://ufldl.stanford.edu/housenumbers/ (264Mb). Some examples of the test images are collected in `svhn/test.png`.
 
 # Dependencies
 * keras / tensorflow
-* OpenCV (for the webcam demo)
+* OpenCV
 * Pillow
 * numpy
 * python-levenshtein
