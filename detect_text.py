@@ -24,7 +24,7 @@ detector_overlap = 4
 detector_scaling_factor = 0.75
 detector_scaling_min = 0.1
 detector_scaling_max = 1.0
-detector_threshold = 0.85
+detector_threshold = 0.75
 
 
 def rescale_image(img, scale_factor):
@@ -179,7 +179,7 @@ def has_correct_label(result_array, label):
     return False
 
 
-def test_image_file(file_path, label):
+def test_image_file(file_path, label, detector_scaling_factor=0.75, detector_overlap=4, detector_threshold=0.75):
     img = Image.open(file_path)
     output_dir = os.path.dirname(file_path) + "/output"
     correct_dir = output_dir + "/correct"
@@ -204,16 +204,12 @@ def test_image_file(file_path, label):
     return result_array
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', action="store", dest="n", type=int, default=1024)
-    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
-    args = parser.parse_args()
-    output_dir = args.data_dir + "/output"
+def test_ocr(dir, max_n=2**18, detector_scaling_factor=0.75, detector_overlap=4, detector_threshold=0.75):
+    output_dir = dir + "/output"
     Utils.rmdir(output_dir)
 
     try:
-        f = open(args.data_dir + '/labels.pickle', 'rb')
+        f = open(dir + '/labels.pickle', 'rb')
         labels = pickle.load(f)
     except:
         raise IOError
@@ -224,9 +220,13 @@ if __name__ == "__main__":
     num_correct_digits = 0
 
     start_time = timer()
+    max_n = min(max_n, len(labels))
 
     for id, label in labels.iteritems():
-        result_array = test_image_file(args.data_dir + "/" + id + ".png", label)
+        result_array = test_image_file(dir + "/" + id + ".png", label,\
+         detector_scaling_factor=detector_scaling_factor,\
+         detector_overlap=detector_overlap,\
+         detector_threshold=detector_threshold)
 
         predicted_label = result_array[0][1] if len(result_array) else ""
         predicted_text = ""
@@ -239,13 +239,24 @@ if __name__ == "__main__":
         num_correct_digits += len(label) - min(distance,len(label))
 
         n += 1
-        if n > args.n:
+        if n > max_n:
             break
 
         accuracy = float(num_correct_digits)/num_digits
-        print "%d/%d: %s %s -> %s accuracy = %.4f" % (n, min(len(labels),args.n), id[0:6], label, predicted_text, accuracy)
+        print "%d/%d: %s %s -> %s accuracy = %.4f" % (n, min(len(labels),max_n), id[0:6], label, predicted_text, accuracy)
     print
 
     end_time = timer()
+    total_time = end_time - start_time
+    print "Finished in %fs" % (total_time)
 
-    print "Finished in %fs" % (end_time - start_time)
+    return dir,max_n,accuracy*100,total_time,detector_scaling_factor,detector_overlap,detector_threshold
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', action="store", dest="n", type=int, default=2**18)
+    parser.add_argument('--directory', action='store', dest='data_dir', default='data')
+    args = parser.parse_args()
+    test_ocr(args.data_dir, args.n)
