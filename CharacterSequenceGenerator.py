@@ -9,6 +9,7 @@ import argparse
 import sys, errno, os
 import pickle
 import Drawing
+import Utils
 
 num_char_columns = 2
 num_char_rows = 32
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     image_width = 256
     image_height = 32
     options={'min_color_delta':16.0, 'min_blur':0.5, 'max_blur':1.5, 'max_rotation':2.0, 'min_noise':4, 'max_noise':4, 'add_background_lines':False}
-    options['full_alphabet'] = True
+    options['full_alphabet'] = False
 
     full_alphabet = options.get('full_alphabet', False)
     if full_alphabet:
@@ -73,8 +74,7 @@ if __name__ == "__main__":
         labels = {}
         mkdir(args.data_dir)
         for i in range(args.n):
-            sys.stdout.write("\r%d" % (i+1))
-            sys.stdout.flush()
+            Utils.progress_bar(i+1, args.n)
             id = str(uuid.uuid4())
             char_image, label = create_char_sequence(image_width, image_height, options)
             labels[id] = label
